@@ -1,0 +1,2335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>SG-FETC v3: Lifelong Memory-Augmented Federated Edge RSU Ecosystem (EWC + Persistence)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  body { background: #070b14; color: #f1f5f9; min-height: 100vh; display: flex; flex-direction: column; }
+
+  header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; padding: 0.85rem 1.5rem; background: #0f172a; border-bottom: 1px solid #1e293b; }
+  .logo { display: flex; align-items: center; gap: 0.75rem; }
+  .status-dot { width: 10px; height: 10px; background: #10b981; border-radius: 50%; box-shadow: 0 0 10px #10b981; flex-shrink: 0; }
+  h1 { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.01em; }
+  .note { font-size: 0.72rem; color: #94a3b8; margin-top: 2px; }
+
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; }
+  button, .btn-label { background: #2563eb; color: white; border: none; padding: 0.4rem 0.78rem; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.78rem; transition: background 0.2s, transform 0.1s; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; user-select: none; }
+  button:hover, .btn-label:hover { background: #1d4ed8; }
+  button:active, .btn-label:active { transform: scale(0.96); }
+  .btn-red { background: #dc2626; }
+  .btn-red:hover { background: #b91c1c; }
+  .btn-amber { background: #d97706; }
+  .btn-amber:hover { background: #b45309; }
+  .btn-slate { background: #334155; }
+  .btn-slate:hover { background: #475569; }
+  .btn-emerald { background: #059669; }
+  .btn-emerald:hover { background: #047857; }
+  .btn-purple { background: #7c3aed; }
+  .btn-purple:hover { background: #6d28d9; }
+  .btn-cyan { background: #0891b2; }
+  .btn-cyan:hover { background: #0e7490; }
+
+  select { background: #1e293b; color: #f1f5f9; border: 1px solid #334155; padding: 0.36rem 0.52rem; border-radius: 6px; outline: none; font-size: 0.77rem; }
+
+  /* Lifelong Learning (EWC + Persistence) & CSV Trace Control Bars */
+  .sub-bar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.55rem 1.5rem;
+    border-bottom: 1px solid #1e293b;
+    font-size: 0.76rem;
+  }
+  .lifelong-bar { background: #0c1324; }
+  .trace-bar { background: #0a101f; }
+  .bar-left, .bar-right { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+
+  .pill {
+    padding: 0.18rem 0.58rem;
+    border-radius: 999px;
+    font-size: 0.69rem;
+    font-weight: 700;
+    background: #1e293b;
+    color: #94a3b8;
+    border: 1px solid #334155;
+    white-space: nowrap;
+  }
+  .pill.active-purple { background: #3b0764; color: #e9d5ff; border-color: #7c3aed; }
+  .pill.active-cyan { background: #083344; color: #a5f3fc; border-color: #06b6d4; }
+  .pill.active-amber { background: #451a03; color: #fde68a; border-color: #d97706; }
+
+  .mono-meta { color: #94a3b8; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.71rem; }
+  .trace-progress-wrap { width: 110px; height: 6px; background: #1e293b; border-radius: 4px; overflow: hidden; display: none; }
+  .trace-progress-wrap > div { height: 100%; width: 0%; background: #a855f7; transition: width 0.2s; }
+  .check-wrap { display: inline-flex; align-items: center; gap: 0.3rem; color: #cbd5e1; font-size: 0.74rem; cursor: pointer; }
+  input[type="file"] { display: none; }
+
+  /* Global Patent & Lifelong Learning Telemetry Bar */
+  .telemetry-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 0.7rem;
+    padding: 0.8rem 1.5rem;
+    background: #0b1120;
+    border-bottom: 1px solid #1e293b;
+  }
+  .t-box {
+    background: #111827;
+    border: 1px solid #1e293b;
+    border-radius: 7px;
+    padding: 0.52rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.14rem;
+  }
+  .t-label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; font-weight: 600; }
+  .t-val { font-size: 1.02rem; font-weight: 700; color: #f8fafc; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .t-sub { font-size: 0.67rem; color: #94a3b8; }
+  .t-val.green { color: #34d399; }
+  .t-val.cyan { color: #22d3ee; }
+  .t-val.blue { color: #60a5fa; }
+  .t-val.amber { color: #fbbf24; }
+  .t-val.purple { color: #c084fc; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.15rem; padding: 1.15rem 1.5rem; max-width: 1580px; margin: 0 auto; width: 100%; }
+
+  .card { background: #111827; border: 1px solid #1e293b; border-radius: 8px; padding: 0.92rem; display: flex; flex-direction: column; gap: 0.58rem; transition: border-color 0.3s, box-shadow 0.3s; }
+  .card.syncing { border-color: #10b981; box-shadow: 0 0 14px rgba(16, 185, 129, 0.22); }
+  .card.override-active { border-color: #ef4444; box-shadow: 0 0 14px rgba(239, 68, 68, 0.22); }
+  .card.consolidating { border-color: #06b6d4; box-shadow: 0 0 14px rgba(6, 182, 212, 0.25); }
+
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
+  .card-head strong { font-size: 0.95rem; }
+  .sub { color: #94a3b8; font-size: 0.74rem; }
+  .badges { display: flex; flex-direction: column; align-items: flex-end; gap: 0.22rem; }
+  .badge { background: #1e3a8a; color: #93c5fd; padding: 0.16rem 0.5rem; border-radius: 4px; font-size: 0.69rem; font-weight: 700; white-space: nowrap; }
+  .badge.emg { background: #7f1d1d; color: #fca5a5; }
+  .badge.cluster { background: #312e81; color: #c7d2fe; font-size: 0.64rem; font-weight: 600; }
+
+  .scenario { display: flex; flex-direction: column; gap: 0.22rem; }
+  .scenario select { width: 100%; }
+  .scenario-desc { font-size: 0.71rem; color: #94a3b8; min-height: 0.95rem; }
+
+  canvas { width: 100%; height: auto; aspect-ratio: 1 / 1; background: #030712; border-radius: 6px; border: 1px solid #1e293b; display: block; }
+
+  .layer-strip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #0b1120;
+    border: 1px solid #1e293b;
+    border-radius: 5px;
+    padding: 0.32rem 0.52rem;
+    font-size: 0.71rem;
+  }
+  .layer-tag { font-weight: 700; padding: 0.12rem 0.42rem; border-radius: 4px; font-size: 0.66rem; }
+  .layer-rl { background: #064e3b; color: #6ee7b7; }
+  .layer-ep { background: #4c1d95; color: #ddd6fe; }
+  .layer-safety { background: #7f1d1d; color: #fca5a5; }
+
+  .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.32rem 0.7rem; font-size: 0.73rem; color: #94a3b8; }
+  .metric-row { display: flex; justify-content: space-between; align-items: center; gap: 0.25rem; }
+  .metric-row b { color: #e2e8f0; font-weight: 600; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+  .bar-group { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.72rem; color: #94a3b8; }
+  .bar-head { display: flex; justify-content: space-between; }
+  .meter { background: #1e293b; height: 6px; border-radius: 4px; overflow: hidden; }
+  .meter > div { background: #10b981; height: 100%; width: 0%; transition: width 0.25s ease; }
+  .meter > div.ped { background: #f59e0b; }
+  .meter > div.surprise { background: #a855f7; }
+  .meter > div.retention { background: #06b6d4; }
+
+  .mem-title { font-size: 0.7rem; color: #64748b; display: flex; justify-content: space-between; }
+  .mem { list-style: none; display: flex; flex-direction: column; gap: 0.22rem; min-height: 3rem; }
+  .mem li { background: #0b0f19; border: 1px solid #1e293b; padding: 0.28rem 0.48rem; border-radius: 4px; font-size: 0.65rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mem li.shared { border-left: 3px solid #a855f7; }
+  .mem li.override { border-left: 3px solid #ef4444; }
+  .mem li.ewc-anchor { border-left: 3px solid #06b6d4; }
+
+  .card-foot { display: flex; gap: 0.4rem; justify-content: space-between; align-items: center; margin-top: 0.1rem; }
+  .card-foot-btns { display: flex; gap: 0.32rem; }
+  .card-foot button { font-size: 0.72rem; padding: 0.3rem 0.56rem; }
+  .rsu-id { font-size: 0.67rem; color: #64748b; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+  #sync-toast { display: none; position: fixed; bottom: 20px; right: 20px; background: #10b981; color: #022c22; padding: 0.68rem 1.05rem; border-radius: 6px; font-weight: 700; box-shadow: 0 6px 18px rgba(0,0,0,0.45); font-size: 0.8rem; z-index: 99; max-width: 460px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="status-dot"></div>
+    <div>
+      <h1>SG-FETC v3: Lifelong Memory-Augmented Federated Edge RSU Ecosystem</h1>
+      <div class="note">EWC Anti-Forgetting (Online Fisher) · Cross-Session Persistence · Closed-Loop Episodic Replay · Surprise-Gated Clustered FedAvg · CSV Trace</div>
+    </div>
+  </div>
+  <div class="controls">
+    <select id="city-filter" onchange="showCity(this.value)"><option value="ALL">All RSU Nodes (8)</option></select>
+    <select id="fed-mode" onchange="setFedMode(this.value)" title="Switch between Invention Mode and Flat Baseline for Patent A/B Comparison">
+      <option value="SG_CLUSTERED">Sync: Surprise-Gated Clustered (Invention)</option>
+      <option value="NAIVE_FEDAVG">Sync: Periodic Flat FedAvg (Baseline)</option>
+    </select>
+    <button id="btn-pause" onclick="togglePause()">Pause</button>
+    <button class="btn-slate" onclick="resetRoadsOnly()" title="Clear vehicles & reset clock while KEEPING learned lifelong weights & memories">Reset Roads</button>
+    <button class="btn-emerald" onclick="triggerFederatedSync(null, true)">Force Clustered Sync</button>
+    <button class="btn-slate" onclick="exportValidationReport()">Export Metrics JSON</button>
+  </div>
+</header>
+
+<!-- Lifelong Learning (EWC Anti-Forgetting + Cross-Session Persistence) Bar -->
+<section class="sub-bar lifelong-bar">
+  <div class="bar-left">
+    <span class="pill active-cyan" id="lifelong-session-pill">LIFELONG: SESSION #1 · 0 STEPS</span>
+    <select id="ewc-mode" onchange="setEwcMode(this.value)" title="Toggle Elastic Weight Consolidation to demonstrate catastrophic forgetting prevention">
+      <option value="ON">EWC Anti-Forgetting: ON (λ=0.35)</option>
+      <option value="OFF">EWC Anti-Forgetting: OFF (Ablation)</option>
+    </select>
+    <button class="btn-cyan" onclick="consolidateAllRegimes()" title="Snapshot current operational regimes into Fisher-weighted EWC anchors">⚓ Consolidate Regimes</button>
+    <button class="btn-slate" onclick="saveLifelongBrain(false)" title="Save weights, Fisher matrices, EWC anchors & episodic memory to browser storage">💾 Save Brain</button>
+    <button class="btn-slate" onclick="exportBrainSnapshot()" title="Download portable JSON checkpoint of the entire multi-agent brain">⬇ Export Brain</button>
+    <label class="btn-label btn-slate" for="brain-file-input" title="Restore a previously exported multi-agent brain JSON checkpoint">📂 Load Brain</label>
+    <input type="file" id="brain-file-input" accept=".json,application/json" onchange="handleBrainImport(event)">
+    <button class="btn-red" onclick="wipeLifelongBrain()" title="Erase saved localStorage brain and reset all agents to tabula rasa">🗑 Wipe Brain</button>
+  </div>
+  <div class="bar-right">
+    <label class="check-wrap" title="Automatically persist learned weights and memories to localStorage every 5s">
+      <input type="checkbox" id="autosave-check" checked onchange="lifelongState.autoSave = this.checked"> Auto-Persist
+    </label>
+    <span class="mono-meta" id="persist-meta">Storage: Active (localStorage)</span>
+  </div>
+</section>
+
+<!-- CSV Traffic-Trace Loader & Replay Controls -->
+<section class="sub-bar trace-bar">
+  <div class="bar-left">
+    <span class="pill" id="trace-status-pill">DATA: SYNTHETIC STOCHASTIC</span>
+    <label class="btn-label btn-purple" for="csv-file-input" title="Upload real-world intersection arrival trace (.csv)">📂 Load CSV Trace</label>
+    <input type="file" id="csv-file-input" accept=".csv,text/csv" onchange="handleCsvUpload(event)">
+    <button class="btn-slate" onclick="downloadSampleCsv()" title="Download a 60s multi-city template CSV">⬇ Sample CSV</button>
+    <button class="btn-slate" id="btn-clear-trace" onclick="clearCsvTrace()" style="display:none;">✕ Clear Trace</button>
+    <span class="mono-meta" id="trace-meta">Schema: time_s, city_id, event_type, lane, count, weather</span>
+  </div>
+  <div class="bar-right">
+    <div class="trace-progress-wrap" id="trace-progress-wrap"><div id="trace-progress-bar"></div></div>
+    <select id="trace-replay-mode" onchange="setTraceReplayMode(this.value)" title="Deterministic disables random arrivals on traced cities for exact A/B repeatability">
+      <option value="DETERMINISTIC">Trace Mode: Deterministic (A/B Exact)</option>
+      <option value="HYBRID">Trace Mode: Hybrid (+ Synthetic Bg)</option>
+    </select>
+    <label class="check-wrap" title="Restart trace automatically when end timestamp is reached">
+      <input type="checkbox" id="trace-loop-check" checked onchange="traceState.loop = this.checked"> Loop Trace
+    </label>
+  </div>
+</section>
+
+<!-- Global Patent & Lifelong Learning Telemetry Dashboard -->
+<section class="telemetry-bar">
+  <div class="t-box">
+    <span class="t-label">Lifelong Retention (EWC)</span>
+    <span class="t-val cyan" id="g-retention">100.0%</span>
+    <span class="t-sub" id="g-ewc-detail">0 anchors · drift 0.000</span>
+  </div>
+  <div class="t-box">
+    <span class="t-label">Network Bandwidth Saved</span>
+    <span class="t-val green" id="g-bw-saved">0.0%</span>
+    <span class="t-sub" id="g-bw-detail">0 gated vs 0 periodic pkts</span>
+  </div>
+  <div class="t-box">
+    <span class="t-label">Episodic Control Recalls</span>
+    <span class="t-val purple" id="g-ep-recalls">0</span>
+    <span class="t-sub" id="g-per-updates">0 PER replay updates</span>
+  </div>
+  <div class="t-box">
+    <span class="t-label">Safety Interlock Overrides</span>
+    <span class="t-val amber" id="g-overrides">0</span>
+    <span class="t-sub">Layer-1 → Layer-2 feedback</span>
+  </div>
+  <div class="t-box">
+    <span class="t-label">Clustered Policy Transfers</span>
+    <span class="t-val blue" id="g-syncs">0</span>
+    <span class="t-sub" id="g-distilled">0 anomaly prototypes shared</span>
+  </div>
+  <div class="t-box">
+    <span class="t-label">Network Mean Reward</span>
+    <span class="t-val" id="g-reward">0.00</span>
+    <span class="t-sub" id="g-throughput">0 veh · 0 ped cleared</span>
+  </div>
+</section>
+
+<main class="grid" id="grid"></main>
+<div id="sync-toast">Action Confirmed</div>
+
+<script>
+/* ============================================================================
+   SG-FETC v3 — LIFELONG MEMORY-AUGMENTED AUTONOMOUS AGENT ECOSYSTEM
+   New Lifelong Learning & Anti-Forgetting Architecture:
+   1. Online Diagonal Fisher Information & Elastic Weight Consolidation (EWC):
+      - Estimates parameter importance F_{a,i} via EMA of squared TD gradients.
+      - Automatically consolidates regime anchors (weights + Fisher + probes)
+        whenever an RSU transitions across operational clusters (e.g., Normal
+        -> Heavy Monsoon Rain -> Rush Hour) after >= 12 regime steps.
+      - Applies EWC quadratic penalty during online TD & PER replay updates to
+        prevent catastrophic forgetting of prior urban regimes.
+      - Computes real-time Lifelong Knowledge Retention (%) combining Fisher-
+        weighted parameter stability and prior-regime action consistency.
+   2. Cross-Session Lifelong Memory Persistence:
+      - Auto-saves all 8 RSU agents (weights, Fisher matrices, consolidated
+        regimes, episodic memories, lifelong step counters) to localStorage.
+      - Supports portable Brain Snapshot Export/Import (.json) and separation
+        of "Reset Roads" (keep brain) vs "Wipe Brain" (tabula rasa).
+   ============================================================================ */
+
+// ---------- Physical Intersection Geometry (1 px ≈ 0.16 m; 28 px car ≈ 4.5 m) ----------
+const CAR_LENGTH = 28;
+const CAR_WIDTH = 15;
+const CROSS_LEN = 128;
+const PED_SPEED = 14;
+const WALK_GAP = 1.2;
+
+// ---------- Intelligent Driver Model (IDM) Physics ----------
+const IDM_A = 12;
+const IDM_B = 20;
+const IDM_T = 1.2;
+const IDM_S0 = 12;
+
+// ---------- Hardware Signal Controller Interlock Timings (sim seconds) ----------
+const MIN_GREEN = 4.0;
+const MAX_GREEN = 14.0;
+const YELLOW_S = 2.0;
+const ALLRED_S = 1.5;
+const EMERGENCY_S = 7.0;
+
+// ---------- Cognitive, Lifelong (EWC) & Federated Hyperparameters ----------
+const STATE_DIM = 6; // [traffic, ped, weather, emergency, dTraffic, overrideRate]
+const NUM_ACTIONS = 3; // 0: HOLD_GREEN, 1: SWITCH_PHASE, 2: PREEMPT_CLEAR
+const SURPRISE_THRESHOLD = 0.25;
+const SYNC_SURPRISE_BUDGET = 2.2;
+const PERIODIC_SYNC_INTERVAL = 10.0;
+const EPISODIC_RADIUS = 0.28;
+const EPISODIC_BLEND_ALPHA = 0.35;
+const PER_BATCH_SIZE = 4;
+
+// EWC Lifelong Consolidation Hyperparameters
+const EWC_LAMBDA = 0.35;          // Penalty strength against forgetting consolidated regimes
+const FISHER_EMA = 0.08;          // Online diagonal Fisher estimation decay
+const MIN_REGIME_STEPS = 12;      // Minimum steps in a regime before auto-consolidation
+const MAX_REGIME_ANCHORS = 5;     // Max distinct consolidated regime anchors per RSU
+const STORAGE_KEY = "sg_fetc_lifelong_brain_v3";
+const AUTOSAVE_INTERVAL = 5.0;    // Seconds between automatic localStorage checkpoints
+
+const ACTION_LABELS = {
+  0: "HOLD_GREEN (extend)",
+  1: "SWITCH_PHASE (cycle)",
+  2: "PREEMPT_CLEAR (priority)"
+};
+
+const LANE_DEF = {
+  north_to_south: { axis: 'y', dir: 1,  coord: 258, group: 'NS', start: 0,   stop: 190 },
+  south_to_north: { axis: 'y', dir: -1, coord: 227, group: 'NS', start: 500, stop: 310 },
+  west_to_east:   { axis: 'x', dir: 1,  coord: 258, group: 'EW', start: 0,   stop: 190 },
+  east_to_west:   { axis: 'x', dir: -1, coord: 227, group: 'EW', start: 500, stop: 310 }
+};
+const LANES = Object.keys(LANE_DEF);
+
+const LANE_ALIASES = {
+  "north_to_south": "north_to_south", "n": "north_to_south", "ns": "north_to_south", "north": "north_to_south", "n2s": "north_to_south",
+  "south_to_north": "south_to_north", "s": "south_to_north", "sn": "south_to_north", "south": "south_to_north", "s2n": "south_to_north",
+  "west_to_east":   "west_to_east",   "w": "west_to_east",   "we": "west_to_east",   "west":  "west_to_east",   "w2e": "west_to_east",
+  "east_to_west":   "east_to_west",   "e": "east_to_west",   "ew": "east_to_west",   "east":  "east_to_west",   "e2w": "east_to_west"
+};
+
+const CITY_DEFS = [
+  { id: "DELHI",      rsu: "RSU-DEL-01", name: "Delhi",      sub: "Central Hub (High-Density)",       traffic: 0.85, pedestrian: 0.55 },
+  { id: "GURUGRAM",   rsu: "RSU-GGN-02", name: "Gurugram",   sub: "Corporate Corridor (Veh-Heavy)",   traffic: 0.75, pedestrian: 0.20 },
+  { id: "CHANDIGARH", rsu: "RSU-CHD-03", name: "Chandigarh", sub: "Planned Sector Grid (Balanced)",   traffic: 0.40, pedestrian: 0.30 },
+  { id: "NOIDA",      rsu: "RSU-NOI-04", name: "Noida",      sub: "Tech Park District (Veh-Heavy)",   traffic: 0.65, pedestrian: 0.25 },
+  { id: "MUMBAI",     rsu: "RSU-MUM-05", name: "Mumbai",     sub: "Coastal Financial (High-Density)", traffic: 0.92, pedestrian: 0.60 },
+  { id: "BENGALURU",  rsu: "RSU-BLR-06", name: "Bengaluru",  sub: "Tech Hub (Congested Corridor)",    traffic: 0.78, pedestrian: 0.32 },
+  { id: "JAIPUR",     rsu: "RSU-JAI-07", name: "Jaipur",     sub: "Heritage Old City (Ped-Heavy)",    traffic: 0.48, pedestrian: 0.52 },
+  { id: "PUNE",       rsu: "RSU-PUN-08", name: "Pune",       sub: "University Town (Balanced)",       traffic: 0.52, pedestrian: 0.38 }
+];
+
+const SCENARIOS = {
+  normal:   { label: "Normal traffic",         desc: "Baseline heterogeneous urban flow with steady pedestrians.", trafficMult: 1.0, pedMult: 1.0, speed: 1.0, weather: 0.1, headway: 1.0, accidents: false },
+  rush:     { label: "Rush hour surge",        desc: "2.4x vehicle arrival rate; tests queue velocity & EWC.",     trafficMult: 2.4, pedMult: 1.2, speed: 1.0, weather: 0.1, headway: 1.0, accidents: false },
+  crowd:    { label: "Pedestrian crowd",       desc: "3.5x kerb density; triggers Layer-1 safety feedback loop.",  trafficMult: 0.8, pedMult: 3.5, speed: 1.0, weather: 0.1, headway: 1.0, accidents: false },
+  accident: { label: "Accident / stalled car", desc: "Periodic lane blockage; spikes TD-error & episodic sync.",   trafficMult: 1.1, pedMult: 1.0, speed: 1.0, weather: 0.1, headway: 1.1, accidents: true },
+  rain:     { label: "Heavy monsoon rain",     desc: "60% speed & 1.4x safe headway; triggers regime anchor.",     trafficMult: 1.0, pedMult: 1.2, speed: 0.6, weather: 0.9, headway: 1.4, accidents: false }
+};
+
+const CROSSINGS = [
+  { zone: 'N', axis: 'y', lo: 186, hi: 200, path: 'h', fixed: 193, from: 186, to: 314 },
+  { zone: 'S', axis: 'y', lo: 300, hi: 314, path: 'h', fixed: 307, from: 186, to: 314 },
+  { zone: 'W', axis: 'x', lo: 186, hi: 200, path: 'v', fixed: 193, from: 186, to: 314 },
+  { zone: 'E', axis: 'x', lo: 300, hi: 314, path: 'v', fixed: 307, from: 186, to: 314 }
+];
+
+const SIGNAL_HEADS = [
+  { phase: 'NS', x: 276, y: 160, w: 12, h: 30, vertical: true },
+  { phase: 'NS', x: 212, y: 310, w: 12, h: 30, vertical: true },
+  { phase: 'EW', x: 160, y: 276, w: 30, h: 12, vertical: false },
+  { phase: 'EW', x: 310, y: 212, w: 30, h: 12, vertical: false }
+];
+
+// ---------- Global Runtime, Lifelong & Federated Server State ----------
+let simTime = 0;
+let lastNow = performance.now();
+let nextUI = 0;
+let nextPeriodicCheck = PERIODIC_SYNC_INTERVAL;
+let nextAutoSave = AUTOSAVE_INTERVAL;
+let paused = false;
+let fedMode = "SG_CLUSTERED";
+
+const lifelongState = {
+  ewcEnabled: true,
+  autoSave: true,
+  sessionCount: 1,
+  totalLifelongSteps: 0,
+  lastSavedAt: null
+};
+
+const traceState = {
+  active: false,
+  fileName: null,
+  events: [],
+  tracedCities: new Set(),
+  cursor: 0,
+  duration: 0,
+  cycleOffset: 0,
+  replayMode: "DETERMINISTIC",
+  loop: true,
+  dispatchedCount: 0
+};
+
+const serverMetrics = {
+  baselinePackets: 0,
+  gatedPacketsSent: 0,
+  clusteredSyncEvents: 0,
+  distilledPrototypes: 0,
+  totalEpisodicRecalls: 0,
+  totalPerUpdates: 0,
+  totalSafetyOverrides: 0,
+  totalVehCleared: 0,
+  totalPedCleared: 0,
+  totalConsolidations: 0
+};
+
+function opposite(phase) { return phase === 'NS' ? 'EW' : 'NS'; }
+
+let toastTimer = null;
+function showToast(msg) {
+  const toast = document.getElementById("sync-toast");
+  toast.innerText = msg;
+  toast.style.display = "block";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toast.style.display = "none"; }, 2900);
+}
+
+// ---------- Vector & Matrix Helpers ----------
+function dot(a, b) {
+  let s = 0;
+  for (let i = 0; i < a.length; i++) s += a[i] * b[i];
+  return s;
+}
+
+function l2Dist(a, b) {
+  let s = 0;
+  for (let i = 0; i < a.length; i++) {
+    const d = a[i] - b[i];
+    s += d * d;
+  }
+  return Math.sqrt(s);
+}
+
+function cosineSim(a, b) {
+  let ab = 0, aa = 0, bb = 0;
+  for (let i = 0; i < a.length; i++) {
+    ab += a[i] * b[i];
+    aa += a[i] * a[i];
+    bb += b[i] * b[i];
+  }
+  const denom = Math.sqrt(aa) * Math.sqrt(bb);
+  return denom < 1e-6 ? 0.5 : Math.max(0, ab / denom);
+}
+
+function cloneMatrix(m) {
+  return m.map(row => row.slice());
+}
+
+function zeroMatrix(rows, cols, fill = 0) {
+  return Array.from({ length: rows }, () => Array(cols).fill(fill));
+}
+
+function idmAccel(v, v0, gap, dv, headway = 1) {
+  const sStar = IDM_S0 + Math.max(0, v * IDM_T * headway + (v * dv) / (2 * Math.sqrt(IDM_A * IDM_B)));
+  return IDM_A * (1 - Math.pow(v / Math.max(v0, 0.1), 4) - Math.pow(sStar / Math.max(gap, 0.5), 2));
+}
+
+/* ============================================================================
+   CSV TRAFFIC-TRACE PARSER, REPLAY ENGINE & SAMPLE GENERATOR
+   ============================================================================ */
+function parseCsvTrace(text) {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith("#"));
+  if (lines.length < 2) throw new Error("CSV must include a header row and at least one event row.");
+
+  const headers = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/^"|"$/g, ""));
+  const idxTime = headers.findIndex(h => ["time_s", "time", "timestamp", "t", "sec", "seconds"].includes(h));
+  const idxCity = headers.findIndex(h => ["city_id", "city", "rsu", "rsu_id", "node"].includes(h));
+  const idxType = headers.findIndex(h => ["event_type", "type", "event", "entity"].includes(h));
+  const idxLane = headers.findIndex(h => ["lane", "direction", "approach", "dir"].includes(h));
+  const idxCount = headers.findIndex(h => ["count", "qty", "num", "volume"].includes(h));
+  const idxWeather = headers.findIndex(h => ["weather", "rain", "friction"].includes(h));
+
+  if (idxTime === -1 || idxType === -1) {
+    throw new Error("Required columns missing: need at least 'time_s' and 'event_type'.");
+  }
+
+  const validCityIds = new Set(CITY_DEFS.map(c => c.id));
+  const events = [];
+  const tracedCities = new Set();
+
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(",").map(c => c.trim().replace(/^"|"$/g, ""));
+    const time_s = parseFloat(cols[idxTime]);
+    if (!Number.isFinite(time_s) || time_s < 0) continue;
+
+    let cityRaw = idxCity >= 0 && cols[idxCity] ? cols[idxCity].toUpperCase() : "ALL";
+    if (cityRaw !== "ALL" && !validCityIds.has(cityRaw)) {
+      const matched = CITY_DEFS.find(c => c.rsu.toUpperCase() === cityRaw || c.name.toUpperCase() === cityRaw);
+      cityRaw = matched ? matched.id : "ALL";
+    }
+
+    const typeRaw = (cols[idxType] || "").toLowerCase();
+    let event_type = null;
+    if (["vehicle", "veh", "car", "auto", "truck", "bus"].includes(typeRaw)) event_type = "vehicle";
+    else if (["emergency", "ambulance", "siren", "emg", "fire"].includes(typeRaw)) event_type = "emergency";
+    else if (["pedestrian", "ped", "walker", "person", "crowd"].includes(typeRaw)) event_type = "pedestrian";
+    else if (["hazard", "obstacle", "accident", "stall", "stalled"].includes(typeRaw)) event_type = "hazard";
+    else if (["weather", "rain", "storm"].includes(typeRaw)) event_type = "weather";
+    if (!event_type) continue;
+
+    const laneRaw = idxLane >= 0 && cols[idxLane] ? cols[idxLane].toLowerCase() : "";
+    const lane = LANE_ALIASES[laneRaw] || null;
+
+    const countVal = idxCount >= 0 && cols[idxCount] ? parseInt(cols[idxCount], 10) : 1;
+    const count = Number.isFinite(countVal) && countVal > 0 ? Math.min(12, countVal) : 1;
+
+    const weatherVal = idxWeather >= 0 && cols[idxWeather] !== "" && cols[idxWeather] !== undefined
+      ? parseFloat(cols[idxWeather]) : null;
+    const weather = (weatherVal !== null && Number.isFinite(weatherVal))
+      ? Math.max(0, Math.min(1, weatherVal)) : null;
+
+    events.push({ time_s, city_id: cityRaw, event_type, lane, count, weather });
+    if (cityRaw === "ALL") CITY_DEFS.forEach(c => tracedCities.add(c.id));
+    else tracedCities.add(cityRaw);
+  }
+
+  if (events.length === 0) throw new Error("No valid traffic events parsed from CSV.");
+  events.sort((a, b) => a.time_s - b.time_s);
+
+  return {
+    events,
+    tracedCities,
+    duration: Math.max(1, events[events.length - 1].time_s + 2.0)
+  };
+}
+
+function handleCsvUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parsed = parseCsvTrace(e.target.result);
+      traceState.active = true;
+      traceState.fileName = file.name;
+      traceState.events = parsed.events;
+      traceState.tracedCities = parsed.tracedCities;
+      traceState.duration = parsed.duration;
+      traceState.cursor = 0;
+      traceState.cycleOffset = 0;
+      traceState.dispatchedCount = 0;
+
+      resetRoadsOnly(true);
+      updateTraceBanner();
+      showToast(`Loaded ${parsed.events.length} events from ${file.name} (${parsed.tracedCities.size} RSU nodes)`);
+    } catch (err) {
+      showToast(`CSV Error: ${err.message}`);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = "";
+}
+
+function clearCsvTrace() {
+  traceState.active = false;
+  traceState.fileName = null;
+  traceState.events = [];
+  traceState.tracedCities = new Set();
+  traceState.cursor = 0;
+  traceState.duration = 0;
+  traceState.cycleOffset = 0;
+  traceState.dispatchedCount = 0;
+  cities.forEach(c => { c.weatherOverride = null; });
+  updateTraceBanner();
+  showToast("CSV trace cleared — reverted to synthetic stochastic arrivals.");
+}
+
+function setTraceReplayMode(mode) {
+  traceState.replayMode = mode;
+  updateTraceBanner();
+  showToast(mode === "DETERMINISTIC"
+    ? "Deterministic Trace Mode: random arrivals suppressed on traced RSUs"
+    : "Hybrid Trace Mode: CSV events overlaid onto synthetic traffic");
+}
+
+function updateTraceBanner() {
+  const pill = document.getElementById("trace-status-pill");
+  const meta = document.getElementById("trace-meta");
+  const clearBtn = document.getElementById("btn-clear-trace");
+  const progWrap = document.getElementById("trace-progress-wrap");
+  const progBar = document.getElementById("trace-progress-bar");
+
+  if (!traceState.active) {
+    pill.innerText = "DATA: SYNTHETIC STOCHASTIC";
+    pill.classList.remove("active-purple");
+    meta.innerText = "Schema: time_s, city_id, event_type, lane, count, weather";
+    clearBtn.style.display = "none";
+    progWrap.style.display = "none";
+    return;
+  }
+
+  pill.innerText = `DATA: CSV TRACE (${traceState.replayMode})`;
+  pill.classList.add("active-purple");
+  clearBtn.style.display = "inline-flex";
+  progWrap.style.display = "block";
+  const pct = traceState.events.length > 0 ? Math.round((traceState.cursor / traceState.events.length) * 100) : 0;
+  progBar.style.width = `${pct}%`;
+  meta.innerText = `${traceState.fileName} · ${traceState.cursor}/${traceState.events.length} events · T=${(simTime - traceState.cycleOffset).toFixed(1)}s/${traceState.duration.toFixed(0)}s`;
+}
+
+function dispatchTraceEvents() {
+  if (!traceState.active || traceState.events.length === 0) return;
+  const traceTime = simTime - traceState.cycleOffset;
+
+  while (traceState.cursor < traceState.events.length && traceState.events[traceState.cursor].time_s <= traceTime) {
+    const ev = traceState.events[traceState.cursor++];
+    traceState.dispatchedCount++;
+
+    const targets = ev.city_id === "ALL" ? cities : cities.filter(c => c.id === ev.city_id);
+
+    targets.forEach(city => {
+      if (ev.weather !== null) city.weatherOverride = ev.weather;
+      if (ev.event_type === "vehicle") {
+        for (let k = 0; k < ev.count; k++) {
+          const lane = ev.lane || LANES[(traceState.cursor + k) % LANES.length];
+          trySpawnVehicle(city, lane, false, k * 34);
+        }
+      } else if (ev.event_type === "emergency") {
+        const lane = ev.lane || LANES[traceState.cursor % LANES.length];
+        triggerSiren(city, lane, true);
+      } else if (ev.event_type === "pedestrian") {
+        for (let k = 0; k < ev.count; k++) {
+          if (city.peds.length < 24) spawnPed(city, ev.lane);
+        }
+      } else if (ev.event_type === "hazard") {
+        triggerHazard(city, ev.lane, true);
+      }
+    });
+  }
+
+  if (traceState.loop && traceTime >= traceState.duration) {
+    traceState.cycleOffset = simTime;
+    traceState.cursor = 0;
+  }
+}
+
+function downloadSampleCsv() {
+  const rows = [
+    "time_s,city_id,event_type,lane,count,weather",
+    "# Sample 60s multi-regime intersection trace for SG-FETC v3 Lifelong EWC & A/B validation",
+    "0.5,DELHI,vehicle,north_to_south,2,0.1",
+    "0.8,MUMBAI,vehicle,west_to_east,2,0.1",
+    "1.0,CHANDIGARH,vehicle,south_to_north,1,0.1",
+    "1.2,DELHI,pedestrian,north_to_south,3,",
+    "2.0,MUMBAI,vehicle,north_to_south,2,",
+    "2.5,BENGALURU,vehicle,east_to_west,2,0.1",
+    "3.0,JAIPUR,pedestrian,west_to_east,4,0.1",
+    "3.5,DELHI,vehicle,west_to_east,2,",
+    "4.2,GURUGRAM,vehicle,north_to_south,2,0.1",
+    "5.0,MUMBAI,pedestrian,east_to_west,4,",
+    "6.0,DELHI,vehicle,south_to_north,2,",
+    "6.5,NOIDA,vehicle,west_to_east,2,0.1",
+    "7.2,PUNE,vehicle,north_to_south,1,0.1",
+    "8.0,MUMBAI,vehicle,east_to_west,3,",
+    "9.0,DELHI,vehicle,north_to_south,2,",
+    "10.0,DELHI,hazard,north_to_south,1,",
+    "11.5,DELHI,vehicle,north_to_south,3,",
+    "12.0,MUMBAI,emergency,west_to_east,1,",
+    "13.5,JAIPUR,pedestrian,south_to_north,5,",
+    "15.0,BENGALURU,vehicle,north_to_south,3,",
+    "16.5,DELHI,vehicle,east_to_west,2,",
+    "18.0,MUMBAI,weather,,1,0.9",
+    "18.5,MUMBAI,vehicle,south_to_north,2,0.9",
+    "20.0,CHANDIGARH,vehicle,west_to_east,1,0.1",
+    "22.0,GURUGRAM,vehicle,east_to_west,3,",
+    "24.0,DELHI,pedestrian,west_to_east,5,",
+    "26.0,MUMBAI,vehicle,west_to_east,3,0.9",
+    "28.0,BENGALURU,hazard,east_to_west,1,",
+    "30.0,DELHI,emergency,south_to_north,1,",
+    "32.0,NOIDA,vehicle,north_to_south,2,",
+    "34.0,PUNE,pedestrian,east_to_west,4,",
+    "36.0,MUMBAI,vehicle,north_to_south,3,0.9",
+    "38.0,DELHI,vehicle,west_to_east,3,",
+    "40.0,JAIPUR,pedestrian,north_to_south,5,",
+    "42.0,BENGALURU,vehicle,south_to_north,3,",
+    "45.0,GURUGRAM,emergency,west_to_east,1,",
+    "48.0,MUMBAI,weather,,1,0.2",
+    "50.0,DELHI,vehicle,north_to_south,2,",
+    "53.0,CHANDIGARH,pedestrian,south_to_north,2,",
+    "56.0,ALL,vehicle,,1,"
+  ];
+  const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "sample_traffic_trace.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast("Downloaded sample_traffic_trace.csv!");
+}
+
+/* ============================================================================
+   LIFELONG MEMORY-AUGMENTED EDGE RSU AGENT (WITH ONLINE EWC)
+   ============================================================================ */
+class EdgeRSUAgent {
+  constructor(cityId) {
+    this.cityId = cityId;
+    this.surpriseThreshold = SURPRISE_THRESHOLD;
+    this.workingMemory = [];
+    this.episodicMemory = [];
+    this.surpriseBudget = 0.0;
+    this.anomalyDensity = 0.0;
+    this.contextProfile = [0.5, 0.3, 0.1];
+    this.overrideRate = 0.0;
+    this.lastReward = 0.0;
+    this.avgReward = 0.0;
+    this.localSyncCount = 0;
+    this.episodicHits = 0;
+    this.lastDecisionSource = "RL_POLICY";
+
+    // Lifelong Learning & EWC State
+    this.lifelongSteps = 0;
+    this.stepsInRegime = 0;
+    this.activeRegimeKey = "C-BAL";
+    this.fisherMatrix = zeroMatrix(NUM_ACTIONS, STATE_DIM, 0.02); // Online diagonal Fisher importance
+    this.consolidatedRegimes = []; // [{ key, label, weights, fisher, probes, avgReward, step }]
+    this.ewcDrift = 0.0;           // Fisher-weighted parameter drift from consolidated anchors
+    this.retentionScore = 100.0;   // 0..100% combined stability & prior-regime action retention
+    this.lastEwcPenaltyMag = 0.0;
+
+    // Linear Q-Function Weights: [3 actions x 6 state features]
+    this.weights = [
+      [ 0.25, -0.18,  0.04, -0.20,  0.15, -0.10],
+      [-0.10,  0.32,  0.02, -0.10, -0.12,  0.18],
+      [ 0.00,  0.00,  0.00,  0.95,  0.05,  0.05]
+    ];
+  }
+
+  getRegimeInfo() {
+    const [t, p, w] = this.contextProfile;
+    if (w > 0.55) return { key: "C-WET", label: "C-WET (Adverse Weather)" };
+    if (t > 0.58 && p > 0.38) return { key: "C-DENSE", label: "C-DENSE (High-Density Hub)" };
+    if (t > 0.52) return { key: "C-VEH", label: "C-VEH (Arterial Corridor)" };
+    if (p > 0.42) return { key: "C-PED", label: "C-PED (Pedestrian Core)" };
+    return { key: "C-BAL", label: "C-BAL (Balanced Grid)" };
+  }
+
+  getClusterLabel() {
+    return this.getRegimeInfo().label;
+  }
+
+  // Consolidate current regime weights + Fisher importance + behavioral probe states into EWC anchor
+  consolidateRegime(forced = false, overrideKey = null) {
+    const info = this.getRegimeInfo();
+    const key = overrideKey || this.activeRegimeKey || info.key;
+    if (!forced && this.stepsInRegime < MIN_REGIME_STEPS) return false;
+
+    // Sample up to 6 representative state-action probes from episodic memory to test action retention later
+    const probes = this.episodicMemory
+      .slice(-12)
+      .filter(m => m.reward >= -0.1)
+      .slice(0, 6)
+      .map(m => ({
+        vec: m.vec.slice(),
+        action: this.greedyAction(m.vec)
+      }));
+
+    // Normalize Fisher matrix so EWC regularization scale stays bounded across lifelong sessions
+    let fMax = 0.01;
+    for (let a = 0; a < NUM_ACTIONS; a++) {
+      for (let i = 0; i < STATE_DIM; i++) {
+        if (this.fisherMatrix[a][i] > fMax) fMax = this.fisherMatrix[a][i];
+      }
+    }
+    const normFisher = this.fisherMatrix.map(row => row.map(v => Number((0.05 + (v / fMax)).toFixed(4))));
+
+    const anchor = {
+      key,
+      label: info.label,
+      weights: cloneMatrix(this.weights),
+      fisher: normFisher,
+      probes,
+      avgReward: Number(this.avgReward.toFixed(3)),
+      step: this.lifelongSteps
+    };
+
+    const existingIdx = this.consolidatedRegimes.findIndex(r => r.key === key);
+    if (existingIdx >= 0) {
+      // Exponential blend with prior anchor for smooth continual consolidation
+      const prev = this.consolidatedRegimes[existingIdx];
+      for (let a = 0; a < NUM_ACTIONS; a++) {
+        for (let i = 0; i < STATE_DIM; i++) {
+          anchor.weights[a][i] = 0.65 * anchor.weights[a][i] + 0.35 * prev.weights[a][i];
+          anchor.fisher[a][i] = Math.max(anchor.fisher[a][i], prev.fisher[a][i] * 0.9);
+        }
+      }
+      this.consolidatedRegimes[existingIdx] = anchor;
+    } else {
+      if (this.consolidatedRegimes.length >= MAX_REGIME_ANCHORS) {
+        this.consolidatedRegimes.shift();
+      }
+      this.consolidatedRegimes.push(anchor);
+    }
+
+    // Log a consolidation marker into episodic memory feed for observability
+    this.episodicMemory.push({
+      surprise: 0.0,
+      priority: 0.15,
+      vec: [this.contextProfile[0], this.contextProfile[1], this.contextProfile[2], 0, 0, this.overrideRate],
+      nextVec: [this.contextProfile[0], this.contextProfile[1], this.contextProfile[2], 0, 0, this.overrideRate],
+      stateStr: [this.contextProfile[0].toFixed(2), this.contextProfile[1].toFixed(2), this.contextProfile[2].toFixed(2), "0.00"],
+      action: 0,
+      reward: Number(this.avgReward.toFixed(2)),
+      override: false,
+      ewcAnchor: true,
+      reason: `EWC_ANCHOR:${key}`,
+      shared: false,
+      origin: this.cityId
+    });
+    if (this.episodicMemory.length > 80) this.episodicMemory.shift();
+
+    this.stepsInRegime = 0;
+    serverMetrics.totalConsolidations++;
+    this.updateRetentionMetrics();
+    return true;
+  }
+
+  greedyAction(vec) {
+    let bestA = 0;
+    let bestQ = -Infinity;
+    for (let a = 0; a < NUM_ACTIONS; a++) {
+      const q = dot(this.weights[a], vec);
+      if (q > bestQ) { bestQ = q; bestA = a; }
+    }
+    return bestA;
+  }
+
+  // Compute EWC gradient penalty for weight (a, i): lambda * sum_k F^(k)_{a,i} * (w - w*^(k))
+  computeEwcPenaltyGrad(a, i) {
+    if (!lifelongState.ewcEnabled || this.consolidatedRegimes.length === 0) return 0;
+    let grad = 0;
+    const wCurr = this.weights[a][i];
+    for (let k = 0; k < this.consolidatedRegimes.length; k++) {
+      const reg = this.consolidatedRegimes[k];
+      grad += reg.fisher[a][i] * (wCurr - reg.weights[a][i]);
+    }
+    return (EWC_LAMBDA / this.consolidatedRegimes.length) * grad;
+  }
+
+  // Measure Catastrophic Forgetting Resistance: Fisher-weighted stability + prior-regime probe agreement
+  updateRetentionMetrics() {
+    if (this.consolidatedRegimes.length === 0) {
+      this.ewcDrift = 0.0;
+      this.retentionScore = 100.0;
+      return;
+    }
+
+    let driftSum = 0;
+    let probeTotal = 0;
+    let probeAgree = 0;
+
+    for (let k = 0; k < this.consolidatedRegimes.length; k++) {
+      const reg = this.consolidatedRegimes[k];
+      let num = 0, den = 1e-6;
+      for (let a = 0; a < NUM_ACTIONS; a++) {
+        for (let i = 0; i < STATE_DIM; i++) {
+          const diff = this.weights[a][i] - reg.weights[a][i];
+          num += reg.fisher[a][i] * diff * diff;
+          den += reg.fisher[a][i];
+        }
+      }
+      driftSum += num / den;
+
+      if (reg.probes && reg.probes.length > 0) {
+        for (const pr of reg.probes) {
+          probeTotal++;
+          if (this.greedyAction(pr.vec) === pr.action) probeAgree++;
+        }
+      }
+    }
+
+    const meanDrift = driftSum / this.consolidatedRegimes.length;
+    this.ewcDrift = meanDrift;
+
+    const paramStability = 100.0 * Math.exp(-3.2 * meanDrift);
+    const probeRetention = probeTotal > 0 ? (probeAgree / probeTotal) * 100.0 : paramStability;
+    this.retentionScore = Math.max(0, Math.min(100, 0.65 * paramStability + 0.35 * probeRetention));
+  }
+
+  buildFeatureVector(rawObs) {
+    this.workingMemory.push(rawObs);
+    if (this.workingMemory.length > 6) this.workingMemory.shift();
+
+    const ema = 0.08;
+    this.contextProfile[0] = (1 - ema) * this.contextProfile[0] + ema * rawObs.traffic;
+    this.contextProfile[1] = (1 - ema) * this.contextProfile[1] + ema * rawObs.pedestrian;
+    this.contextProfile[2] = (1 - ema) * this.contextProfile[2] + ema * rawObs.weather;
+
+    let dTraffic = 0;
+    if (this.workingMemory.length >= 2) {
+      const oldest = this.workingMemory[0];
+      dTraffic = Math.max(-1, Math.min(1, (rawObs.traffic - oldest.traffic) * 1.5));
+    }
+
+    return [
+      rawObs.traffic,
+      rawObs.pedestrian,
+      rawObs.weather,
+      rawObs.emergency ? 1.0 : 0.0,
+      dTraffic,
+      this.overrideRate
+    ];
+  }
+
+  queryEpisodicBias(stateVec) {
+    const bonuses = [0, 0, 0];
+    let weightSum = [0, 0, 0];
+    let matched = false;
+
+    for (let i = 0; i < this.episodicMemory.length; i++) {
+      const mem = this.episodicMemory[i];
+      if (mem.ewcAnchor) continue;
+      const dist = l2Dist(stateVec, mem.vec);
+      if (dist <= EPISODIC_RADIUS) {
+        const simWeight = Math.exp(-dist * 4.0) * (1 + mem.priority);
+        bonuses[mem.action] += simWeight * mem.reward;
+        weightSum[mem.action] += simWeight;
+        matched = true;
+      }
+    }
+
+    if (!matched) return { matched: false, bonuses: [0, 0, 0] };
+
+    for (let a = 0; a < NUM_ACTIONS; a++) {
+      if (weightSum[a] > 0) bonuses[a] /= weightSum[a];
+    }
+    return { matched: true, bonuses };
+  }
+
+  act(rawObs) {
+    const vec = this.buildFeatureVector(rawObs);
+
+    const qBase = this.weights.map(row => dot(row, vec));
+    const ep = this.queryEpisodicBias(vec);
+    const qEffective = qBase.map((q, a) => q + (ep.matched ? EPISODIC_BLEND_ALPHA * ep.bonuses[a] : 0));
+
+    let proposedAction = qEffective.indexOf(Math.max(...qEffective));
+    if (!traceState.active && Math.random() < 0.03) proposedAction = Math.floor(Math.random() * 2);
+
+    const baseBest = qBase.indexOf(Math.max(...qBase));
+    let source = (ep.matched && proposedAction !== baseBest) ? "EPISODIC_RECALL" : "RL_POLICY";
+    if (source === "EPISODIC_RECALL") {
+      this.episodicHits++;
+      serverMetrics.totalEpisodicRecalls++;
+    }
+
+    let finalAction = proposedAction;
+    let overrideTriggered = false;
+    let overrideReason = null;
+
+    if (rawObs.emergency) {
+      finalAction = 2;
+      if (proposedAction !== 2) {
+        overrideTriggered = true;
+        overrideReason = "EMERGENCY_PREEMPT";
+      }
+    } else if (rawObs.pedestrian > 0.78 && rawObs.activePhaseElapsed >= MIN_GREEN) {
+      finalAction = 1;
+      if (proposedAction !== 1) {
+        overrideTriggered = true;
+        overrideReason = "PED_CROWD_GUARD";
+      }
+    } else if (rawObs.activePhaseQueue === 0 && rawObs.crossPhaseQueue >= 3 && rawObs.activePhaseElapsed >= MIN_GREEN) {
+      finalAction = 1;
+      if (proposedAction !== 1) {
+        overrideTriggered = true;
+        overrideReason = "STARVATION_GUARD";
+      }
+    }
+
+    if (overrideTriggered) {
+      source = "SAFETY_INTERLOCK";
+      serverMetrics.totalSafetyOverrides++;
+    }
+
+    this.overrideRate = 0.90 * this.overrideRate + 0.10 * (overrideTriggered ? 1.0 : 0.0);
+    this.lastDecisionSource = source;
+
+    return { vec, proposedAction, finalAction, overrideTriggered, overrideReason, source };
+  }
+
+  learn(decision, reward, nextVec, cityRef) {
+    const { vec, proposedAction, finalAction, overrideTriggered, overrideReason } = decision;
+    const gamma = 0.85;
+    const lr = 0.04;
+
+    this.lifelongSteps++;
+    this.stepsInRegime++;
+    lifelongState.totalLifelongSteps++;
+
+    // Detect operational regime shift & auto-consolidate prior regime into EWC anchor
+    const currRegime = this.getRegimeInfo().key;
+    if (currRegime !== this.activeRegimeKey) {
+      if (this.stepsInRegime >= MIN_REGIME_STEPS) {
+        const consolidated = this.consolidateRegime(false, this.activeRegimeKey);
+        if (consolidated && cityRef) {
+          cityRef.consolidateFlashUntil = simTime + 1.5;
+        }
+      }
+      this.activeRegimeKey = currRegime;
+      this.stepsInRegime = 0;
+    }
+
+    this.lastReward = reward;
+    this.avgReward = 0.92 * this.avgReward + 0.08 * reward;
+
+    const nextMaxQ = Math.max(...this.weights.map(row => dot(row, nextVec)));
+    const qCurr = dot(this.weights[finalAction], vec);
+    const tdTarget = reward + gamma * nextMaxQ;
+    let tdError = tdTarget - qCurr;
+
+    let penaltyMag = 0;
+    for (let i = 0; i < STATE_DIM; i++) {
+      const tdGrad = tdError * vec[i];
+      // Update Online Diagonal Fisher Information Matrix F_{a,i} = E[grad^2]
+      this.fisherMatrix[finalAction][i] = (1 - FISHER_EMA) * this.fisherMatrix[finalAction][i] + FISHER_EMA * (tdGrad * tdGrad);
+
+      // EWC Anti-Forgetting Penalty Gradient
+      const ewcPen = this.computeEwcPenaltyGrad(finalAction, i);
+      penaltyMag += Math.abs(ewcPen);
+
+      const delta = lr * (tdGrad - ewcPen);
+      this.weights[finalAction][i] = Math.max(-2.5, Math.min(2.5, this.weights[finalAction][i] + delta));
+    }
+    this.lastEwcPenaltyMag = penaltyMag;
+
+    // Layer-1 Safety-to-RL Feedback Loop (also Fisher-tracked & EWC-regularized)
+    if (overrideTriggered && proposedAction !== finalAction) {
+      const qBad = dot(this.weights[proposedAction], vec);
+      const errBad = -0.85 - qBad;
+      for (let i = 0; i < STATE_DIM; i++) {
+        const badGrad = errBad * vec[i];
+        this.fisherMatrix[proposedAction][i] = (1 - FISHER_EMA) * this.fisherMatrix[proposedAction][i] + FISHER_EMA * (badGrad * badGrad);
+        const ewcPen = this.computeEwcPenaltyGrad(proposedAction, i);
+        this.weights[proposedAction][i] = Math.max(-2.5, Math.min(2.5, this.weights[proposedAction][i] + (lr * 1.4) * (badGrad - ewcPen)));
+      }
+      tdError = Math.max(Math.abs(tdError), Math.abs(errBad));
+    }
+
+    const surprise = Math.abs(tdError);
+    this.anomalyDensity = 0.90 * this.anomalyDensity + 0.10 * surprise;
+
+    if (surprise >= this.surpriseThreshold || overrideTriggered) {
+      this.surpriseBudget += surprise;
+
+      const entry = {
+        surprise: Number(surprise.toFixed(3)),
+        priority: surprise + (overrideTriggered ? 0.4 : 0),
+        vec: vec.slice(),
+        nextVec: nextVec.slice(),
+        stateStr: vec.slice(0, 4).map(v => v.toFixed(2)),
+        action: finalAction,
+        reward: Number(reward.toFixed(2)),
+        override: overrideTriggered,
+        ewcAnchor: false,
+        reason: overrideReason || (surprise > 0.65 ? "ANOMALY" : "SURPRISE"),
+        shared: false,
+        origin: this.cityId
+      };
+
+      if (this.episodicMemory.length >= 80) {
+        let minIdx = 0;
+        for (let i = 1; i < this.episodicMemory.length; i++) {
+          if (this.episodicMemory[i].priority < this.episodicMemory[minIdx].priority) minIdx = i;
+        }
+        this.episodicMemory.splice(minIdx, 1);
+      }
+      this.episodicMemory.push(entry);
+    }
+
+    this.runPrioritizedReplay(gamma, lr * 0.5);
+    this.updateRetentionMetrics();
+  }
+
+  runPrioritizedReplay(gamma, lr) {
+    const playable = this.episodicMemory.filter(m => !m.ewcAnchor);
+    if (playable.length < 3) return;
+    const ranked = playable
+      .sort((a, b) => b.priority - a.priority)
+      .slice(0, PER_BATCH_SIZE);
+
+    for (const m of ranked) {
+      const nextMaxQ = Math.max(...this.weights.map(row => dot(row, m.nextVec)));
+      const qVal = dot(this.weights[m.action], m.vec);
+      const err = (m.reward + gamma * nextMaxQ) - qVal;
+      for (let i = 0; i < STATE_DIM; i++) {
+        const ewcPen = this.computeEwcPenaltyGrad(m.action, i);
+        this.weights[m.action][i] = Math.max(-2.5, Math.min(2.5, this.weights[m.action][i] + lr * (err * m.vec[i] - ewcPen)));
+      }
+      m.priority = Math.max(0.05, Math.abs(err) * 0.85);
+      serverMetrics.totalPerUpdates++;
+    }
+  }
+
+  // Serialization for Cross-Session Lifelong Persistence
+  serialize() {
+    return {
+      cityId: this.cityId,
+      weights: this.weights,
+      fisherMatrix: this.fisherMatrix,
+      consolidatedRegimes: this.consolidatedRegimes,
+      episodicMemory: this.episodicMemory.slice(-60),
+      contextProfile: this.contextProfile,
+      overrideRate: this.overrideRate,
+      avgReward: this.avgReward,
+      anomalyDensity: this.anomalyDensity,
+      surpriseBudget: this.surpriseBudget,
+      localSyncCount: this.localSyncCount,
+      episodicHits: this.episodicHits,
+      lifelongSteps: this.lifelongSteps,
+      stepsInRegime: this.stepsInRegime,
+      activeRegimeKey: this.activeRegimeKey
+    };
+  }
+
+  hydrate(data) {
+    if (!data || !Array.isArray(data.weights)) return;
+    this.weights = cloneMatrix(data.weights);
+    if (Array.isArray(data.fisherMatrix)) this.fisherMatrix = cloneMatrix(data.fisherMatrix);
+    if (Array.isArray(data.consolidatedRegimes)) this.consolidatedRegimes = data.consolidatedRegimes;
+    if (Array.isArray(data.episodicMemory)) this.episodicMemory = data.episodicMemory;
+    if (Array.isArray(data.contextProfile)) this.contextProfile = data.contextProfile.slice();
+    this.overrideRate = data.overrideRate || 0;
+    this.avgReward = data.avgReward || 0;
+    this.anomalyDensity = data.anomalyDensity || 0;
+    this.surpriseBudget = data.surpriseBudget || 0;
+    this.localSyncCount = data.localSyncCount || 0;
+    this.episodicHits = data.episodicHits || 0;
+    this.lifelongSteps = data.lifelongSteps || 0;
+    this.stepsInRegime = data.stepsInRegime || 0;
+    this.activeRegimeKey = data.activeRegimeKey || this.getRegimeInfo().key;
+    this.updateRetentionMetrics();
+  }
+}
+
+/* ============================================================================
+   MICROSCOPIC VEHICLE & INTERSECTION PHYSICS
+   ============================================================================ */
+class Vehicle {
+  constructor(lane, id, isEmergency = false, speedFactor = 1.0, spawnOffset = 0) {
+    const d = LANE_DEF[lane];
+    this.id = id;
+    this.lane = lane;
+    this.dir = d.dir;
+    this.axis = d.axis;
+    this.isEmergency = isEmergency;
+    this.isObstacle = false;
+    this.length = CAR_LENGTH;
+    this.width = CAR_WIDTH;
+    const baseSpeed = traceState.active ? 60 : (50 + Math.random() * 22);
+    this.v0 = isEmergency ? 128 : baseSpeed * speedFactor;
+    this.v = isEmergency ? 92 : this.v0 * 0.7;
+    this.pos = d.start - d.dir * spawnOffset;
+    this.committed = false;
+    this.passedBox = false;
+  }
+
+  step(leader, color, city, dt) {
+    if (this.isObstacle) return;
+    const d = LANE_DEF[this.lane];
+    const dir = this.dir;
+    const constraints = [];
+
+    if (leader) {
+      constraints.push({ gap: dir * (leader.pos - this.pos) - leader.length, v: leader.v });
+    }
+
+    if (color === 'green') this.committed = false;
+    const gapLine = dir * (d.stop - this.pos);
+
+    if (!this.isEmergency && !this.committed && gapLine > 0) {
+      if (color === 'red') {
+        constraints.push({ gap: gapLine, v: 0 });
+      } else if (color === 'yellow') {
+        const comfortableStop = (this.v * this.v) / (2 * IDM_B);
+        if (gapLine > comfortableStop) constraints.push({ gap: gapLine, v: 0 });
+        else this.committed = true;
+      }
+    }
+
+    const inBox = o => {
+      const f = o.pos;
+      const r = o.pos - LANE_DEF[o.lane].dir * o.length;
+      return Math.max(f, r) > 190 && Math.min(f, r) < 310;
+    };
+    if (!this.isEmergency && !inBox(this) && gapLine > 0) {
+      const junctionBusy = city.vehicles.some(o => o !== this && LANE_DEF[o.lane].group !== d.group && inBox(o));
+      if (junctionBusy) constraints.push({ gap: gapLine, v: 0 });
+    }
+
+    for (const z of CROSSINGS) {
+      if (z.axis !== this.axis || !city.occupied.has(z.zone)) continue;
+      const stopAt = dir > 0 ? z.lo - 2 : z.hi + 2;
+      const g = dir * (stopAt - this.pos);
+      if (g > 0) constraints.push({ gap: g, v: 0 });
+    }
+
+    const activeWeather = cityWeather(city);
+    const headway = activeWeather > 0.5 ? 1.4 : (SCENARIOS[city.scenario].headway || 1);
+
+    let acc = IDM_A * (1 - Math.pow(this.v / this.v0, 4));
+    for (const c of constraints) {
+      const a2 = idmAccel(this.v, this.v0, c.gap, this.v - c.v, headway);
+      if (a2 < acc) acc = a2;
+    }
+    acc = Math.max(acc, -6 * IDM_B);
+
+    this.v = Math.max(0, this.v + acc * dt);
+    this.pos += dir * this.v * dt;
+
+    if (!this.passedBox) {
+      const cleared = dir > 0 ? this.pos > 320 : this.pos < 180;
+      if (cleared) {
+        this.passedBox = true;
+        city.vehClearedSinceTick++;
+        serverMetrics.totalVehCleared++;
+        if (this.isEmergency) city.emgClearedSinceTick++;
+      }
+    }
+  }
+
+  isOutOfBounds() {
+    return this.pos < -160 || this.pos > 660;
+  }
+}
+
+// ---------- Per-City Edge RSU Initialization ----------
+const cities = CITY_DEFS.map(def => ({
+  ...def,
+  vehicles: [],
+  peds: [],
+  occupied: new Set(),
+  queued: 0,
+  queuedNS: 0,
+  queuedEW: 0,
+  waitingPeds: 0,
+  vehClearedSinceTick: 0,
+  pedClearedSinceTick: 0,
+  emgClearedSinceTick: 0,
+  walkReadyAt: [0, 0, 0, 0],
+  nextVehicleId: 0,
+  signal: { state: 'GREEN', phase: 'NS', since: 0 },
+  wantSwitch: false,
+  emergencyPending: false,
+  emergencyPhase: 'NS',
+  lastAction: 0,
+  prevDecision: null,
+  nextAgentAt: 1.0,
+  nextAccidentAt: 12.0,
+  syncFlashUntil: 0,
+  overrideFlashUntil: 0,
+  consolidateFlashUntil: 0,
+  weatherOverride: null,
+  agent: new EdgeRSUAgent(def.id),
+  scenario: "normal"
+}));
+
+function scen(city) { return SCENARIOS[city.scenario]; }
+function cityWeather(city) { return city.weatherOverride !== null ? city.weatherOverride : scen(city).weather; }
+function citySpeedFactor(city) { return cityWeather(city) > 0.5 ? 0.6 : scen(city).speed; }
+
+function signalColor(city, approach) {
+  const s = city.signal;
+  if (s.state === 'GREEN' || s.state === 'EMERGENCY') return s.phase === approach ? 'green' : 'red';
+  if (s.state === 'YELLOW') return s.phase === approach ? 'yellow' : 'red';
+  return 'red';
+}
+
+function signalLabel(city) {
+  const s = city.signal;
+  if (s.state === 'EMERGENCY') return `PREEMPT ${s.phase} CLEAR`;
+  if (s.state === 'ALLRED') return 'ALL RED INTERLOCK';
+  return `${s.phase} ${s.state}`;
+}
+
+function signalTick(city) {
+  const s = city.signal;
+  const el = simTime - s.since;
+
+  if (city.emergencyPending && s.phase !== city.emergencyPhase && s.state === 'GREEN') {
+    s.state = 'YELLOW';
+    s.since = simTime;
+  }
+
+  switch (s.state) {
+    case 'GREEN':
+      if (el >= MIN_GREEN && (city.wantSwitch || city.emergencyPending || el >= MAX_GREEN)) {
+        s.state = 'YELLOW'; s.since = simTime; city.wantSwitch = false;
+      }
+      break;
+    case 'YELLOW':
+      if (el >= YELLOW_S) { s.state = 'ALLRED'; s.since = simTime; }
+      break;
+    case 'ALLRED':
+      if (el >= ALLRED_S) {
+        if (city.emergencyPending) {
+          city.emergencyPending = false;
+          s.phase = city.emergencyPhase;
+          s.state = 'EMERGENCY';
+        } else {
+          s.phase = opposite(s.phase);
+          s.state = 'GREEN';
+        }
+        s.since = simTime;
+      }
+      break;
+    case 'EMERGENCY':
+      if (el >= EMERGENCY_S && !city.vehicles.some(v => v.isEmergency)) {
+        s.state = 'ALLRED';
+        s.since = simTime;
+      }
+      break;
+  }
+}
+
+function walkAllowed(city, crossingIndex) {
+  const c = CROSSINGS[crossingIndex];
+  const color = c.axis === 'y' ? signalColor(city, 'NS') : signalColor(city, 'EW');
+  return color === 'red';
+}
+
+function pedXY(p) {
+  const z = CROSSINGS[p.c];
+  let coord;
+  if (p.state === 'wait') coord = p.side === 0 ? z.from - 6 - p.q * 8 : z.to + 6 + p.q * 8;
+  else coord = p.side === 0 ? z.from + p.s : z.to - p.s;
+  return z.path === 'h' ? [coord, z.fixed] : [z.fixed, coord];
+}
+
+function updatePeds(city, dt) {
+  for (let c = 0; c < CROSSINGS.length; c++) {
+    if (simTime < city.walkReadyAt[c] || !walkAllowed(city, c)) continue;
+    const waiting = city.peds.filter(p => p.c === c && p.state === 'wait');
+    if (waiting.length === 0) continue;
+    waiting.sort((a, b) => a.arrived - b.arrived);
+    const first = waiting[0];
+    first.state = 'cross';
+    first.s = 0;
+    city.walkReadyAt[c] = simTime + WALK_GAP;
+  }
+
+  const queues = {};
+  city.peds.forEach(p => {
+    if (p.state !== 'wait') return;
+    const k = p.c + '-' + p.side;
+    if (!queues[k]) queues[k] = [];
+    queues[k].push(p);
+  });
+  Object.values(queues).forEach(list => {
+    list.sort((a, b) => a.arrived - b.arrived);
+    list.forEach((p, i) => p.q = i);
+  });
+
+  city.peds.forEach(p => {
+    if (p.state === 'cross') {
+      p.s += PED_SPEED * dt;
+      if (p.s >= CROSS_LEN) {
+        p.state = 'gone';
+        city.pedClearedSinceTick++;
+        serverMetrics.totalPedCleared++;
+      }
+    }
+  });
+  city.peds = city.peds.filter(p => p.state !== 'gone');
+  city.occupied = new Set(city.peds.filter(p => p.state === 'cross').map(p => CROSSINGS[p.c].zone));
+  city.waitingPeds = city.peds.filter(p => p.state === 'wait').length;
+}
+
+function spawnPed(city, targetLane = null) {
+  let c;
+  if (targetLane === "north_to_south") c = 0;
+  else if (targetLane === "south_to_north") c = 1;
+  else if (targetLane === "west_to_east") c = 2;
+  else if (targetLane === "east_to_west") c = 3;
+  else c = Math.floor(Math.random() * CROSSINGS.length);
+
+  const side = (city.peds.length % 2 === 0) ? 0 : 1;
+  const jaywalk = !traceState.active && Math.random() < 0.12;
+  city.peds.push({ c, side, state: jaywalk ? 'cross' : 'wait', s: 0, q: 0, arrived: simTime });
+}
+
+function trySpawnVehicle(city, lane, isEmergency = false, spawnOffset = 0) {
+  const entry = LANE_DEF[lane].start - LANE_DEF[lane].dir * spawnOffset;
+  const blocked = city.vehicles.some(v => v.lane === lane && Math.abs(v.pos - entry) < 36);
+  if (!blocked) {
+    const factor = isEmergency ? 1.0 : citySpeedFactor(city);
+    city.vehicles.push(new Vehicle(lane, city.nextVehicleId++, isEmergency, factor, spawnOffset));
+  }
+}
+
+function triggerSiren(city, targetLane = null, silent = false) {
+  const lane = targetLane || LANES[Math.floor(Math.random() * LANES.length)];
+  const laneDef = LANE_DEF[lane];
+  city.emergencyPending = true;
+  city.emergencyPhase = laneDef.group;
+  city.vehicles = city.vehicles.filter(v => !(v.lane === lane && Math.abs(v.pos - laneDef.start) < 45));
+  city.vehicles.push(new Vehicle(lane, city.nextVehicleId++, true, 1.0));
+  if (city.signal.state === 'GREEN' && city.signal.phase !== laneDef.group) {
+    city.signal.state = 'YELLOW';
+    city.signal.since = simTime;
+  }
+  if (!silent) showToast(`[${city.rsu}] V2X Siren detected on ${lane.replace(/_/g, ' ')} → Layer-1 Preempt`);
+}
+
+function triggerHazard(city, targetLane = null, silent = false) {
+  const lane = targetLane || LANES[Math.floor(Math.random() * LANES.length)];
+  const laneDef = LANE_DEF[lane];
+  const obstaclePos = laneDef.dir > 0 ? 150 : 350;
+  city.vehicles = city.vehicles.filter(v => !(v.lane === lane && Math.abs(v.pos - obstaclePos) < 40));
+  const obstacle = new Vehicle(lane, city.nextVehicleId++, false, 1.0);
+  obstacle.pos = obstaclePos;
+  obstacle.isObstacle = true;
+  obstacle.v = 0;
+  obstacle.v0 = 0.01;
+  obstacle.expiresAt = simTime + 18;
+  city.vehicles.push(obstacle);
+  if (!silent) showToast(`[${city.rsu}] Stalled vehicle hazard injected on ${lane.replace(/_/g, ' ')}`);
+}
+
+function clearHazards(city) {
+  const initial = city.vehicles.length;
+  city.vehicles = city.vehicles.filter(v => !v.isObstacle);
+  const cleared = initial - city.vehicles.length;
+  showToast(cleared > 0 ? `[${city.rsu}] Cleared ${cleared} lane obstacle(s)` : `[${city.rsu}] Lanes already clear`);
+}
+
+function updateVehicles(city, dt) {
+  city.vehicles = city.vehicles.filter(v => !(v.isObstacle && simTime > v.expiresAt) && !v.isOutOfBounds());
+  const colors = { NS: signalColor(city, 'NS'), EW: signalColor(city, 'EW') };
+  let qNS = 0, qEW = 0;
+
+  LANES.forEach(lane => {
+    const d = LANE_DEF[lane];
+    const lv = city.vehicles
+      .filter(v => v.lane === lane)
+      .sort((a, b) => d.dir * (b.pos - a.pos));
+
+    for (let i = 0; i < lv.length; i++) {
+      lv[i].step(i > 0 ? lv[i - 1] : null, colors[d.group], city, dt);
+    }
+    lv.forEach(v => {
+      const toLine = d.dir * (d.stop - v.pos);
+      if (!v.isObstacle && v.v < 8 && toLine >= 0 && toLine < 130) {
+        if (d.group === 'NS') qNS++;
+        else qEW++;
+      }
+    });
+  });
+
+  city.queuedNS = qNS;
+  city.queuedEW = qEW;
+  city.queued = qNS + qEW;
+}
+
+/* ============================================================================
+   CONTINUOUS MULTI-OBJECTIVE REWARD & CLOSED-LOOP RSU CYCLE
+   ============================================================================ */
+function computePhysicalReward(city, action) {
+  const queuePenalty = -0.55 * Math.min(1, city.queued / 14);
+  const pedPenalty = -0.35 * Math.min(1, city.waitingPeds / 8);
+  const throughputBonus = 0.22 * city.vehClearedSinceTick + 0.14 * city.pedClearedSinceTick;
+  const emgBonus = 0.80 * city.emgClearedSinceTick;
+
+  const activeEmg = city.vehicles.find(v => v.isEmergency);
+  const emgDelayPenalty = (activeEmg && activeEmg.v < 35) ? -0.45 : 0;
+
+  const el = simTime - city.signal.since;
+  const oscillationPenalty = (action === 1 && el < MIN_GREEN + 1.0) ? -0.15 : 0;
+
+  city.vehClearedSinceTick = 0;
+  city.pedClearedSinceTick = 0;
+  city.emgClearedSinceTick = 0;
+
+  return Math.max(-1.5, Math.min(1.5, queuePenalty + pedPenalty + throughputBonus + emgBonus + emgDelayPenalty + oscillationPenalty));
+}
+
+function agentCycle(city) {
+  const activePhase = city.signal.phase;
+  const rawObs = {
+    traffic: Math.min(1, city.queued / 14),
+    pedestrian: Math.min(1, city.waitingPeds / 8),
+    weather: cityWeather(city),
+    emergency: city.emergencyPending || city.vehicles.some(v => v.isEmergency),
+    activePhaseElapsed: simTime - city.signal.since,
+    activePhaseQueue: activePhase === 'NS' ? city.queuedNS : city.queuedEW,
+    crossPhaseQueue: activePhase === 'NS' ? city.queuedEW : city.queuedNS
+  };
+
+  const decision = city.agent.act(rawObs);
+
+  if (city.prevDecision) {
+    const reward = computePhysicalReward(city, city.prevDecision.finalAction);
+    city.agent.learn(city.prevDecision, reward, decision.vec, city);
+  }
+
+  city.prevDecision = decision;
+  city.lastAction = decision.finalAction;
+  city.wantSwitch = (decision.finalAction === 1);
+
+  if (decision.overrideTriggered) {
+    city.overrideFlashUntil = simTime + 1.6;
+  }
+
+  if (fedMode === "SG_CLUSTERED" && city.agent.surpriseBudget >= SYNC_SURPRISE_BUDGET) {
+    triggerFederatedSync(city, false);
+  }
+}
+
+/* ============================================================================
+   FEDERATED AGGREGATION SERVER (FISHER-AWARE CONTEXT-CLUSTERED SYNC)
+   ============================================================================ */
+function triggerFederatedSync(initiatorCity = null, isManual = false) {
+  if (fedMode === "NAIVE_FEDAVG" && !isManual) {
+    serverMetrics.gatedPacketsSent += cities.length;
+    serverMetrics.clusteredSyncEvents++;
+    for (let a = 0; a < NUM_ACTIONS; a++) {
+      for (let i = 0; i < STATE_DIM; i++) {
+        const avg = cities.reduce((sum, c) => sum + c.agent.weights[a][i], 0) / cities.length;
+        cities.forEach(c => { c.agent.weights[a][i] = avg; });
+      }
+    }
+    cities.forEach(c => {
+      c.agent.localSyncCount++;
+      c.agent.updateRetentionMetrics();
+      c.syncFlashUntil = simTime + 0.9;
+    });
+    return;
+  }
+
+  const senders = initiatorCity
+    ? [initiatorCity]
+    : cities.filter(c => c.agent.surpriseBudget > 0.4 || isManual);
+
+  if (senders.length === 0) return;
+
+  serverMetrics.gatedPacketsSent += senders.length;
+  serverMetrics.clusteredSyncEvents++;
+
+  const weightSnapshots = cities.map(c => cloneMatrix(c.agent.weights));
+
+  cities.forEach((target, tIdx) => {
+    // Fisher-weighted self-protection during federated fusion prevents remote weights
+    // from overwriting high-importance consolidated local parameters
+    const fused = cloneMatrix(weightSnapshots[tIdx]);
+    const denomMatrix = zeroMatrix(NUM_ACTIONS, STATE_DIM, 1.0);
+
+    if (lifelongState.ewcEnabled && target.agent.consolidatedRegimes.length > 0) {
+      for (let a = 0; a < NUM_ACTIONS; a++) {
+        for (let i = 0; i < STATE_DIM; i++) {
+          const localImp = 1.0 + 0.5 * target.agent.fisherMatrix[a][i];
+          denomMatrix[a][i] = localImp;
+          fused[a][i] = weightSnapshots[tIdx][a][i] * localImp;
+        }
+      }
+    }
+
+    let receivedAny = false;
+
+    senders.forEach(sender => {
+      if (sender.id === target.id) return;
+      const sIdx = cities.findIndex(c => c.id === sender.id);
+      const ctxSim = cosineSim(target.agent.contextProfile, sender.agent.contextProfile);
+
+      if (ctxSim < 0.72 && !isManual) return;
+
+      const anomalyConfidence = 1.0 + Math.min(2.0, sender.agent.anomalyDensity * 2.5);
+      const transferCoeff = Math.pow(ctxSim, 3) * 0.45 * anomalyConfidence;
+
+      receivedAny = true;
+      for (let a = 0; a < NUM_ACTIONS; a++) {
+        for (let i = 0; i < STATE_DIM; i++) {
+          fused[a][i] += transferCoeff * weightSnapshots[sIdx][a][i];
+          denomMatrix[a][i] += transferCoeff;
+        }
+      }
+
+      const topAnomaly = sender.agent.episodicMemory
+        .filter(m => !m.shared && !m.ewcAnchor && m.reward > 0.05)
+        .sort((a, b) => b.priority - a.priority)[0];
+
+      if (topAnomaly && ctxSim >= 0.85) {
+        const alreadyKnown = target.agent.episodicMemory.some(
+          m => !m.ewcAnchor && l2Dist(m.vec, topAnomaly.vec) < 0.12 && m.action === topAnomaly.action
+        );
+        if (!alreadyKnown) {
+          target.agent.episodicMemory.push({
+            ...topAnomaly,
+            vec: topAnomaly.vec.slice(),
+            nextVec: topAnomaly.nextVec.slice(),
+            stateStr: topAnomaly.stateStr.slice(),
+            shared: true,
+            reason: `DISTILLED←${sender.id.slice(0, 3)}`
+          });
+          if (target.agent.episodicMemory.length > 80) target.agent.episodicMemory.shift();
+          serverMetrics.distilledPrototypes++;
+        }
+      }
+    });
+
+    if (receivedAny) {
+      for (let a = 0; a < NUM_ACTIONS; a++) {
+        for (let i = 0; i < STATE_DIM; i++) {
+          target.agent.weights[a][i] = fused[a][i] / denomMatrix[a][i];
+        }
+      }
+      target.agent.updateRetentionMetrics();
+      target.syncFlashUntil = simTime + 1.1;
+    }
+  });
+
+  senders.forEach(s => {
+    s.agent.surpriseBudget = 0.0;
+    s.agent.localSyncCount++;
+    s.syncFlashUntil = simTime + 1.4;
+  });
+
+  if (isManual) {
+    showToast(`Fisher-Protected Clustered Sync completed across ${senders.length} RSU nodes!`);
+  } else if (initiatorCity) {
+    showToast(`[${initiatorCity.rsu}] Surprise threshold hit → Clustered Policy Sync (${initiatorCity.agent.getClusterLabel()})`);
+  }
+}
+
+/* ============================================================================
+   CROSS-SESSION LIFELONG PERSISTENCE (localStorage + JSON BRAIN SNAPSHOTS)
+   ============================================================================ */
+function buildBrainPayload() {
+  return {
+    schema: "SG-FETC-LIFELONG-BRAIN-V3",
+    savedAt: new Date().toISOString(),
+    sessionCount: lifelongState.sessionCount,
+    totalLifelongSteps: lifelongState.totalLifelongSteps,
+    ewcEnabled: lifelongState.ewcEnabled,
+    serverMetrics: { ...serverMetrics },
+    agents: cities.map(c => c.agent.serialize())
+  };
+}
+
+function saveLifelongBrain(silent = true) {
+  try {
+    const payload = buildBrainPayload();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    lifelongState.lastSavedAt = new Date().toLocaleTimeString();
+    document.getElementById("persist-meta").innerText = `Saved: ${lifelongState.lastSavedAt}`;
+    if (!silent) showToast(`Lifelong brain saved (${lifelongState.totalLifelongSteps} steps across 8 RSUs)!`);
+  } catch (err) {
+    document.getElementById("persist-meta").innerText = "Storage unavailable";
+    if (!silent) showToast(`Save warning: ${err.message}`);
+  }
+}
+
+function loadLifelongBrainFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const payload = JSON.parse(raw);
+    if (!payload || payload.schema !== "SG-FETC-LIFELONG-BRAIN-V3") return false;
+
+    lifelongState.sessionCount = (payload.sessionCount || 1) + 1;
+    lifelongState.totalLifelongSteps = payload.totalLifelongSteps || 0;
+    if (payload.serverMetrics) {
+      Object.assign(serverMetrics, payload.serverMetrics);
+    }
+    if (Array.isArray(payload.agents)) {
+      payload.agents.forEach(aData => {
+        const city = cities.find(c => c.id === aData.cityId);
+        if (city) city.agent.hydrate(aData);
+      });
+    }
+    document.getElementById("persist-meta").innerText = `Restored Session #${lifelongState.sessionCount}`;
+    showToast(`Restored Lifelong Brain (Session #${lifelongState.sessionCount} · ${lifelongState.totalLifelongSteps} prior steps)`);
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
+function exportBrainSnapshot() {
+  const payload = buildBrainPayload();
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `sg_fetc_lifelong_brain_s${lifelongState.sessionCount}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast("Exported portable Lifelong Brain Snapshot (.json)!");
+}
+
+function handleBrainImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const payload = JSON.parse(e.target.result);
+      if (!payload || !Array.isArray(payload.agents)) {
+        throw new Error("Invalid SG-FETC brain snapshot format.");
+      }
+      lifelongState.sessionCount = (payload.sessionCount || 1) + 1;
+      lifelongState.totalLifelongSteps = payload.totalLifelongSteps || 0;
+      if (payload.serverMetrics) Object.assign(serverMetrics, payload.serverMetrics);
+      payload.agents.forEach(aData => {
+        const city = cities.find(c => c.id === aData.cityId);
+        if (city) city.agent.hydrate(aData);
+      });
+      saveLifelongBrain(true);
+      showToast(`Imported Brain Snapshot (${lifelongState.totalLifelongSteps} lifelong steps restored)!`);
+    } catch (err) {
+      showToast(`Import Error: ${err.message}`);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = "";
+}
+
+function consolidateAllRegimes() {
+  let count = 0;
+  cities.forEach(c => {
+    if (c.agent.consolidateRegime(true)) {
+      c.consolidateFlashUntil = simTime + 1.5;
+      count++;
+    }
+  });
+  if (lifelongState.autoSave) saveLifelongBrain(true);
+  showToast(`Consolidated EWC Fisher regime anchors across ${count} RSU nodes!`);
+}
+
+function setEwcMode(val) {
+  lifelongState.ewcEnabled = (val === "ON");
+  const pill = document.getElementById("lifelong-session-pill");
+  if (lifelongState.ewcEnabled) {
+    pill.classList.remove("active-amber");
+    pill.classList.add("active-cyan");
+    showToast("EWC Anti-Forgetting ENABLED (Fisher-weighted parameter protection active)");
+  } else {
+    pill.classList.remove("active-cyan");
+    pill.classList.add("active-amber");
+    showToast("EWC Anti-Forgetting DISABLED (Ablation mode — watch retention drift!)");
+  }
+}
+
+/* ============================================================================
+   CANVAS RENDERING
+   ============================================================================ */
+function drawSignalHead(ctx, head, approachColor) {
+  ctx.fillStyle = "#020617";
+  ctx.strokeStyle = "#334155";
+  ctx.lineWidth = 1;
+  ctx.fillRect(head.x, head.y, head.w, head.h);
+  ctx.strokeRect(head.x, head.y, head.w, head.h);
+  const order = ['red', 'yellow', 'green'];
+  const lit = { red: "#ef4444", yellow: "#facc15", green: "#22c55e" };
+  order.forEach((name, i) => {
+    const cx = head.vertical ? head.x + 6 : head.x + 6 + i * 9;
+    const cy = head.vertical ? head.y + 6 + i * 9 : head.y + 6;
+    const on = approachColor === name;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 3.4, 0, Math.PI * 2);
+    if (on) { ctx.shadowColor = lit[name]; ctx.shadowBlur = 8; ctx.fillStyle = lit[name]; }
+    else { ctx.shadowBlur = 0; ctx.fillStyle = "#1f2937"; }
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  });
+}
+
+const CAR_COLORS = ['#38bdf8', '#a78bfa', '#34d399', '#e2e8f0', '#fbbf24', '#f472b6', '#94a3b8'];
+
+function drawCar(ctx, v) {
+  const vertical = v.axis === 'y';
+  const dir = v.dir;
+  let x, y, w, h;
+  if (vertical) {
+    w = CAR_WIDTH; h = v.length;
+    x = LANE_DEF[v.lane].coord;
+    y = dir > 0 ? v.pos - v.length : v.pos;
+  } else {
+    w = v.length; h = CAR_WIDTH;
+    y = LANE_DEF[v.lane].coord;
+    x = dir > 0 ? v.pos - v.length : v.pos;
+  }
+
+  const body = v.isObstacle ? '#f97316' : (v.isEmergency ? '#f8fafc' : CAR_COLORS[v.id % CAR_COLORS.length]);
+  ctx.save();
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+  ctx.fillRect(x + 2, y + 2, w, h);
+  ctx.fillStyle = body;
+  ctx.fillRect(x, y, w, h);
+
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+  if (vertical) ctx.fillRect(x + 2, y + 7, w - 4, h - 14);
+  else ctx.fillRect(x + 7, y + 2, w - 14, h - 4);
+
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+  if (vertical) {
+    const wy = dir > 0 ? y + h - 8 : y + 2;
+    ctx.fillRect(x + 2, wy, w - 4, 5);
+  } else {
+    const wx = dir > 0 ? x + w - 8 : x + 2;
+    ctx.fillRect(wx, y + 2, 5, h - 4);
+  }
+
+  ctx.fillStyle = v.isObstacle ? '#fef08a' : '#fef9c3';
+  if (vertical) {
+    const fy = dir > 0 ? y + h - 2 : y + 1;
+    ctx.fillRect(x + 2, fy, 3, 2);
+    ctx.fillRect(x + w - 5, fy, 3, 2);
+  } else {
+    const fx = dir > 0 ? x + w - 2 : x + 1;
+    ctx.fillRect(fx, y + 2, 2, 3);
+    ctx.fillRect(fx, y + h - 5, 2, 3);
+  }
+
+  if (v.isEmergency) {
+    const on = Math.floor(Date.now() / 140) % 2 === 0;
+    ctx.fillStyle = on ? '#ef4444' : '#3b82f6';
+    if (vertical) ctx.fillRect(x + 3, y + h / 2 - 2, w - 6, 4);
+    else ctx.fillRect(x + w / 2 - 2, y + 3, 4, h - 6);
+  }
+  ctx.restore();
+}
+
+function drawCity(city) {
+  const ctx = city.ctx;
+  ctx.clearRect(0, 0, 500, 500);
+
+  ctx.fillStyle = "#1e293b";
+  ctx.fillRect(200, 0, 100, 500);
+  ctx.fillRect(0, 200, 500, 100);
+
+  ctx.strokeStyle = "#475569";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 8]);
+  ctx.beginPath();
+  ctx.moveTo(250, 0); ctx.lineTo(250, 500);
+  ctx.moveTo(0, 250); ctx.lineTo(500, 250);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = "#e2e8f0";
+  ctx.fillRect(258, 186, 15, 3);
+  ctx.fillRect(227, 311, 15, 3);
+  ctx.fillRect(186, 258, 3, 15);
+  ctx.fillRect(311, 227, 3, 15);
+
+  ctx.fillStyle = "#334155";
+  for (let i = 0; i < 4; i++) {
+    ctx.fillRect(205 + i * 24, 192, 16, 5);
+    ctx.fillRect(205 + i * 24, 303, 16, 5);
+    ctx.fillRect(192, 205 + i * 24, 5, 16);
+    ctx.fillRect(303, 205 + i * 24, 5, 16);
+  }
+
+  ctx.strokeStyle = "rgba(56, 189, 248, 0.25)";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(202, 202, 96, 96);
+
+  CROSSINGS.forEach((z, i) => {
+    const ok = walkAllowed(city, i);
+    const x = z.path === 'h' ? z.from - 14 : z.fixed - 9;
+    const y = z.path === 'h' ? z.fixed - 9 : z.from - 14;
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = ok ? "#22c55e" : "#ef4444";
+    ctx.fill();
+  });
+
+  const colorNS = signalColor(city, 'NS');
+  const colorEW = signalColor(city, 'EW');
+  SIGNAL_HEADS.forEach(head => drawSignalHead(ctx, head, head.phase === 'NS' ? colorNS : colorEW));
+
+  city.peds.forEach(p => {
+    const [x, y] = pedXY(p);
+    ctx.beginPath();
+    ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = p.state === 'wait' ? "#fdba74" : "#fde047";
+    ctx.fill();
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+
+  city.vehicles.forEach(v => drawCar(ctx, v));
+
+  if (cityWeather(city) > 0.5) {
+    ctx.strokeStyle = "rgba(147, 197, 253, 0.28)";
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 40; i++) {
+      const rx = (i * 97 + Math.floor(Date.now() / 20)) % 500;
+      const ry = (i * 53 + Math.floor(Date.now() / 12)) % 500;
+      ctx.beginPath();
+      ctx.moveTo(rx, ry);
+      ctx.lineTo(rx - 4, ry + 10);
+      ctx.stroke();
+    }
+  }
+}
+
+/* ============================================================================
+   UI CONSTRUCTION & LIVE TELEMETRY
+   ============================================================================ */
+function buildCard(city) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  const options = Object.entries(SCENARIOS)
+    .map(([key, s]) => `<option value="${key}">${s.label}</option>`).join("");
+
+  card.innerHTML = `
+    <div class="card-head">
+      <div><strong>${city.name}</strong><br><span class="sub">${city.sub}</span></div>
+      <div class="badges">
+        <span class="badge" data-role="signal">NS GREEN</span>
+        <span class="badge cluster" data-role="cluster">C-BAL</span>
+      </div>
+    </div>
+    <div class="scenario">
+      <select data-role="scenario">${options}</select>
+      <div class="scenario-desc" data-role="scenario-desc"></div>
+    </div>
+    <canvas width="500" height="500"></canvas>
+
+    <div class="layer-strip">
+      <span>Active Control Layer</span>
+      <span class="layer-tag layer-rl" data-role="layer">L2: RL POLICY</span>
+    </div>
+
+    <div class="metrics-grid">
+      <div class="metric-row"><span>Action</span><b data-role="decision">--</b></div>
+      <div class="metric-row"><span>Phase Timer</span><b data-role="timer">0.0s</b></div>
+      <div class="metric-row"><span>Mean Reward</span><b data-role="reward">0.00</b></div>
+      <div class="metric-row"><span>EP Hits / Syncs</span><b data-role="ep-sync">0 / 0</b></div>
+      <div class="metric-row"><span>EWC Anchors</span><b data-role="anchors">0 regimes</b></div>
+      <div class="metric-row"><span>Lifelong Steps</span><b data-role="steps">0</b></div>
+    </div>
+
+    <div class="bar-group">
+      <div class="bar-head"><span>Vehicles queued (NS/EW)</span><span data-role="traffic-txt">0</span></div>
+      <div class="meter"><div data-role="traffic-bar"></div></div>
+    </div>
+    <div class="bar-group">
+      <div class="bar-head"><span>Pedestrians waiting / crossing</span><span data-role="ped-txt">0 / 0</span></div>
+      <div class="meter"><div class="ped" data-role="ped-bar"></div></div>
+    </div>
+    <div class="bar-group">
+      <div class="bar-head"><span>Surprise Uplink Gate (Trigger: ${SYNC_SURPRISE_BUDGET.toFixed(1)})</span><span data-role="surprise-txt">0.00</span></div>
+      <div class="meter"><div class="surprise" data-role="surprise-bar"></div></div>
+    </div>
+    <div class="bar-group">
+      <div class="bar-head"><span>EWC Knowledge Retention (Anti-Forgetting)</span><span data-role="retention-txt">100.0%</span></div>
+      <div class="meter"><div class="retention" data-role="retention-bar" style="width:100%"></div></div>
+    </div>
+
+    <div class="mem-title">
+      <span>Closed-Loop Episodic & EWC Memory</span>
+      <span data-role="mem-count">0 stored</span>
+    </div>
+    <ul class="mem" data-role="mem-list"></ul>
+
+    <div class="card-foot">
+      <span class="rsu-id">${city.rsu}</span>
+      <div class="card-foot-btns">
+        <button class="btn-red" data-role="siren" title="Dispatch V2X ambulance to test Layer-1 Preempt">🚑 Siren</button>
+        <button class="btn-amber" data-role="hazard" title="Inject stalled vehicle anomaly">⚠️ Hazard</button>
+        <button class="btn-slate" data-role="clear" title="Clear road obstacles">🧹</button>
+      </div>
+    </div>
+  `;
+
+  city.canvas = card.querySelector('canvas');
+  city.ctx = city.canvas.getContext('2d');
+  city.els = {
+    signal: card.querySelector('[data-role=signal]'),
+    cluster: card.querySelector('[data-role=cluster]'),
+    scenario: card.querySelector('[data-role=scenario]'),
+    scenarioDesc: card.querySelector('[data-role=scenario-desc]'),
+    layer: card.querySelector('[data-role=layer]'),
+    decision: card.querySelector('[data-role=decision]'),
+    timer: card.querySelector('[data-role=timer]'),
+    reward: card.querySelector('[data-role=reward]'),
+    epSync: card.querySelector('[data-role=ep-sync]'),
+    anchors: card.querySelector('[data-role=anchors]'),
+    steps: card.querySelector('[data-role=steps]'),
+    trafficTxt: card.querySelector('[data-role=traffic-txt]'),
+    trafficBar: card.querySelector('[data-role=traffic-bar]'),
+    pedTxt: card.querySelector('[data-role=ped-txt]'),
+    pedBar: card.querySelector('[data-role=ped-bar]'),
+    surpriseTxt: card.querySelector('[data-role=surprise-txt]'),
+    surpriseBar: card.querySelector('[data-role=surprise-bar]'),
+    retentionTxt: card.querySelector('[data-role=retention-txt]'),
+    retentionBar: card.querySelector('[data-role=retention-bar]'),
+    memCount: card.querySelector('[data-role=mem-count]'),
+    memList: card.querySelector('[data-role=mem-list]')
+  };
+
+  city.els.scenario.value = city.scenario;
+  city.els.scenarioDesc.innerText = scen(city).desc;
+  city.els.scenario.onchange = e => {
+    // Consolidate prior regime before switching scenarios for continual learning
+    if (city.agent.stepsInRegime >= 6) {
+      if (city.agent.consolidateRegime(true)) {
+        city.consolidateFlashUntil = simTime + 1.5;
+      }
+    }
+    city.scenario = e.target.value;
+    city.weatherOverride = null;
+    city.vehicles = [];
+    city.peds = [];
+    city.occupied = new Set();
+    city.nextAccidentAt = simTime + 2;
+    city.els.scenarioDesc.innerText = scen(city).desc;
+  };
+  card.querySelector('[data-role=siren]').onclick = () => triggerSiren(city);
+  card.querySelector('[data-role=hazard]').onclick = () => triggerHazard(city);
+  card.querySelector('[data-role=clear]').onclick = () => clearHazards(city);
+
+  const opt = document.createElement('option');
+  opt.value = city.id;
+  opt.innerText = `${city.name} (${city.rsu})`;
+  document.getElementById('city-filter').appendChild(opt);
+  city.card = card;
+  document.getElementById('grid').appendChild(card);
+}
+cities.forEach(buildCard);
+
+function updateUI() {
+  let meanNetReward = 0;
+  let meanRetention = 0;
+  let meanDrift = 0;
+  let totalAnchors = 0;
+
+  cities.forEach(city => {
+    const e = city.els;
+    const s = city.signal;
+    const a = city.agent;
+    meanNetReward += a.avgReward;
+    meanRetention += a.retentionScore;
+    meanDrift += a.ewcDrift;
+    totalAnchors += a.consolidatedRegimes.length;
+
+    const pct = v => `${Math.min(100, Math.max(0, Math.round(v * 100)))}%`;
+    const trafficLevel = Math.min(1, city.queued / 14);
+    const pedLevel = Math.min(1, city.waitingPeds / 8);
+    const surpriseRatio = Math.min(1, a.surpriseBudget / SYNC_SURPRISE_BUDGET);
+
+    e.signal.innerText = signalLabel(city);
+    e.signal.className = s.state === 'EMERGENCY' ? 'badge emg' : 'badge';
+    e.cluster.innerText = a.getClusterLabel();
+    e.timer.innerText = `${(simTime - s.since).toFixed(1)}s`;
+    e.decision.innerText = ACTION_LABELS[city.lastAction].split(" ")[0];
+    e.reward.innerText = a.avgReward.toFixed(2);
+    e.epSync.innerText = `${a.episodicHits} / ${a.localSyncCount}`;
+    e.anchors.innerText = `${a.consolidatedRegimes.length} regime${a.consolidatedRegimes.length === 1 ? '' : 's'}`;
+    e.steps.innerText = a.lifelongSteps;
+
+    if (a.lastDecisionSource === "SAFETY_INTERLOCK") {
+      e.layer.innerText = "L1: SAFETY INTERLOCK";
+      e.layer.className = "layer-tag layer-safety";
+    } else if (a.lastDecisionSource === "EPISODIC_RECALL") {
+      e.layer.innerText = "L2: EPISODIC RECALL";
+      e.layer.className = "layer-tag layer-ep";
+    } else {
+      e.layer.innerText = "L2: RL POLICY";
+      e.layer.className = "layer-tag layer-rl";
+    }
+
+    city.card.classList.toggle('syncing', simTime < city.syncFlashUntil);
+    city.card.classList.toggle('override-active', simTime < city.overrideFlashUntil);
+    city.card.classList.toggle('consolidating', simTime < city.consolidateFlashUntil);
+
+    e.trafficTxt.innerText = `${city.queued} (${city.queuedNS}/${city.queuedEW})`;
+    e.trafficBar.style.width = pct(trafficLevel);
+    const crossingNow = city.peds.filter(p => p.state === 'cross').length;
+    e.pedTxt.innerText = `${city.waitingPeds} wait · ${crossingNow} walk`;
+    e.pedBar.style.width = pct(pedLevel);
+    e.surpriseTxt.innerText = `${a.surpriseBudget.toFixed(2)} / ${SYNC_SURPRISE_BUDGET.toFixed(1)}`;
+    e.surpriseBar.style.width = pct(surpriseRatio);
+    e.retentionTxt.innerText = `${a.retentionScore.toFixed(1)}% (d=${a.ewcDrift.toFixed(3)})`;
+    e.retentionBar.style.width = `${Math.round(a.retentionScore)}%`;
+    e.memCount.innerText = `${a.episodicMemory.length} stored`;
+
+    e.memList.innerHTML = "";
+    a.episodicMemory.slice(-3).reverse().forEach(m => {
+      const li = document.createElement("li");
+      if (m.ewcAnchor) li.className = "ewc-anchor";
+      else if (m.shared) li.className = "shared";
+      else if (m.override) li.className = "override";
+      li.innerText = m.ewcAnchor
+        ? `[${m.reason}] Fisher Anchor Saved · AvgR:${m.reward}`
+        : `[${m.reason} δ=${m.surprise}] A:${m.action} R:${m.reward} S:[${m.stateStr.join(",")}]`;
+      e.memList.appendChild(li);
+    });
+  });
+
+  // Update Global Telemetry & Lifelong Badges
+  const avgRet = meanRetention / cities.length;
+  const avgDrift = meanDrift / cities.length;
+  document.getElementById("g-retention").innerText = `${avgRet.toFixed(1)}%`;
+  document.getElementById("g-ewc-detail").innerText = `${totalAnchors} anchors · drift ${avgDrift.toFixed(3)}`;
+  document.getElementById("lifelong-session-pill").innerText = `LIFELONG: SESSION #${lifelongState.sessionCount} · ${lifelongState.totalLifelongSteps} STEPS`;
+
+  const basePkts = Math.max(1, serverMetrics.baselinePackets);
+  const bwSaved = serverMetrics.baselinePackets === 0
+    ? 0
+    : Math.max(0, (1 - serverMetrics.gatedPacketsSent / basePkts) * 100);
+
+  document.getElementById("g-bw-saved").innerText = `${bwSaved.toFixed(1)}%`;
+  document.getElementById("g-bw-detail").innerText = `${serverMetrics.gatedPacketsSent} sent vs ${serverMetrics.baselinePackets} periodic`;
+  document.getElementById("g-ep-recalls").innerText = serverMetrics.totalEpisodicRecalls;
+  document.getElementById("g-per-updates").innerText = `${serverMetrics.totalPerUpdates} PER replay updates`;
+  document.getElementById("g-overrides").innerText = serverMetrics.totalSafetyOverrides;
+  document.getElementById("g-syncs").innerText = serverMetrics.clusteredSyncEvents;
+  document.getElementById("g-distilled").innerText = `${serverMetrics.distilledPrototypes} prototypes distilled`;
+  document.getElementById("g-reward").innerText = (meanNetReward / cities.length).toFixed(2);
+  document.getElementById("g-throughput").innerText = `${serverMetrics.totalVehCleared} veh · ${serverMetrics.totalPedCleared} ped cleared`;
+
+  if (traceState.active) updateTraceBanner();
+}
+
+function setFedMode(mode) {
+  fedMode = mode;
+  showToast(mode === "SG_CLUSTERED"
+    ? "Switched to SG-FETC (Surprise-Gated Clustered Invention Mode)"
+    : "Switched to Periodic Flat FedAvg (Baseline Comparison Mode)");
+}
+
+function showCity(value) {
+  cities.forEach(c => {
+    c.card.style.display = (value === 'ALL' || c.id === value) ? '' : 'none';
+  });
+}
+
+function togglePause() {
+  paused = !paused;
+  document.getElementById('btn-pause').innerText = paused ? 'Resume' : 'Pause';
+}
+
+// Resets physical intersection vehicles, pedestrians & clocks while PRESERVING lifelong brain
+function resetRoadsOnly(silent = false) {
+  simTime = 0;
+  nextUI = 0;
+  nextPeriodicCheck = PERIODIC_SYNC_INTERVAL;
+  nextAutoSave = AUTOSAVE_INTERVAL;
+  traceState.cursor = 0;
+  traceState.cycleOffset = 0;
+  traceState.dispatchedCount = 0;
+
+  cities.forEach(city => {
+    city.vehicles = [];
+    city.peds = [];
+    city.occupied = new Set();
+    city.queued = 0; city.queuedNS = 0; city.queuedEW = 0;
+    city.waitingPeds = 0;
+    city.vehClearedSinceTick = 0; city.pedClearedSinceTick = 0; city.emgClearedSinceTick = 0;
+    city.walkReadyAt = [0, 0, 0, 0];
+    city.nextVehicleId = 0;
+    city.signal = { state: 'GREEN', phase: 'NS', since: 0 };
+    city.wantSwitch = false;
+    city.emergencyPending = false;
+    city.emergencyPhase = 'NS';
+    city.prevDecision = null;
+    city.nextAgentAt = 1.0;
+    city.nextAccidentAt = 12.0;
+    city.syncFlashUntil = 0;
+    city.overrideFlashUntil = 0;
+    city.consolidateFlashUntil = 0;
+    city.weatherOverride = null;
+  });
+  if (!silent) showToast("Roads & trace clock reset (Lifelong weights, EWC anchors & memories preserved!)");
+}
+
+// Complete tabula rasa wipe (clears localStorage + resets agents & metrics)
+function wipeLifelongBrain() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  lifelongState.sessionCount = 1;
+  lifelongState.totalLifelongSteps = 0;
+  lifelongState.lastSavedAt = null;
+  Object.assign(serverMetrics, {
+    baselinePackets: 0, gatedPacketsSent: 0, clusteredSyncEvents: 0,
+    distilledPrototypes: 0, totalEpisodicRecalls: 0, totalPerUpdates: 0,
+    totalSafetyOverrides: 0, totalVehCleared: 0, totalPedCleared: 0,
+    totalConsolidations: 0
+  });
+  cities.forEach(city => {
+    city.agent = new EdgeRSUAgent(city.id);
+    city.lastAction = 0;
+  });
+  resetRoadsOnly(true);
+  document.getElementById("persist-meta").innerText = "Storage: Cleared (Tabula Rasa)";
+  showToast("Wiped lifelong brain, EWC anchors, and localStorage — reset to tabula rasa!");
+}
+
+function exportValidationReport() {
+  const basePkts = Math.max(1, serverMetrics.baselinePackets);
+  const bwSavedPct = serverMetrics.baselinePackets === 0
+    ? 0
+    : Number(Math.max(0, (1 - serverMetrics.gatedPacketsSent / basePkts) * 100).toFixed(2));
+  const avgRetention = Number((cities.reduce((s, c) => s + c.agent.retentionScore, 0) / cities.length).toFixed(2));
+  const avgDrift = Number((cities.reduce((s, c) => s + c.agent.ewcDrift, 0) / cities.length).toFixed(4));
+
+  const report = {
+    protocol: "SG-FETC v3 (Lifelong Memory-Augmented Federated Edge Traffic Controller)",
+    activeMode: fedMode,
+    ewcAntiForgetting: lifelongState.ewcEnabled ? `ON (lambda=${EWC_LAMBDA})` : "OFF (Ablation)",
+    lifelongSessionCount: lifelongState.sessionCount,
+    totalLifelongSteps: lifelongState.totalLifelongSteps,
+    dataSource: traceState.active ? `CSV_TRACE (${traceState.replayMode})` : "SYNTHETIC_STOCHASTIC",
+    traceFileName: traceState.fileName,
+    traceEventsDispatched: traceState.dispatchedCount,
+    simElapsedSeconds: Number(simTime.toFixed(2)),
+    technicalEffectMetrics: {
+      lifelongKnowledgeRetentionPercent: avgRetention,
+      meanFisherWeightedDrift: avgDrift,
+      totalEwcRegimeConsolidations: serverMetrics.totalConsolidations,
+      baselinePeriodicPackets: serverMetrics.baselinePackets,
+      actualPacketsTransmitted: serverMetrics.gatedPacketsSent,
+      bandwidthReductionPercent: bwSavedPct,
+      clusteredSyncEvents: serverMetrics.clusteredSyncEvents,
+      distilledEpisodicPrototypes: serverMetrics.distilledPrototypes,
+      closedLoopEpisodicRecalls: serverMetrics.totalEpisodicRecalls,
+      prioritizedReplayUpdates: serverMetrics.totalPerUpdates,
+      layer1SafetyOverridesFedBack: serverMetrics.totalSafetyOverrides,
+      vehiclesCleared: serverMetrics.totalVehCleared,
+      pedestriansCleared: serverMetrics.totalPedCleared
+    },
+    perNodeTelemetry: cities.map(c => ({
+      rsuId: c.rsu,
+      city: c.name,
+      scenario: c.scenario,
+      assignedCluster: c.agent.getClusterLabel(),
+      contextProfile: c.agent.contextProfile.map(v => Number(v.toFixed(3))),
+      lifelongSteps: c.agent.lifelongSteps,
+      consolidatedRegimes: c.agent.consolidatedRegimes.map(r => r.key),
+      ewcRetentionPercent: Number(c.agent.retentionScore.toFixed(2)),
+      ewcFisherDrift: Number(c.agent.ewcDrift.toFixed(4)),
+      meanPhysicalReward: Number(c.agent.avgReward.toFixed(3)),
+      episodicMemorySize: c.agent.episodicMemory.length,
+      episodicRecallHits: c.agent.episodicHits,
+      uplinkSyncCount: c.agent.localSyncCount,
+      learnedWeightMatrix: c.agent.weights.map(row => row.map(w => Number(w.toFixed(4)))),
+      fisherImportanceMatrix: c.agent.fisherMatrix.map(row => row.map(v => Number(v.toFixed(4))))
+    }))
+  };
+
+  const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `sg_fetc_v3_validation_${fedMode.toLowerCase()}_ewc_${lifelongState.ewcEnabled ? 'on' : 'off'}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast("Patent & Lifelong Learning validation telemetry exported as JSON!");
+}
+
+// Attempt to restore persisted lifelong brain on boot
+loadLifelongBrainFromStorage();
+
+// ---------- Main Real-Time Execution Loop ----------
+function frame(now) {
+  const dt = paused ? 0 : Math.min(0.05, (now - lastNow) / 1000);
+  lastNow = now;
+  simTime += dt;
+  const wave = 1 + 0.35 * Math.sin(simTime / 45);
+
+  if (!paused && traceState.active) {
+    dispatchTraceEvents();
+  }
+
+  if (simTime >= nextPeriodicCheck) {
+    nextPeriodicCheck += PERIODIC_SYNC_INTERVAL;
+    serverMetrics.baselinePackets += cities.length;
+    if (fedMode === "NAIVE_FEDAVG") {
+      triggerFederatedSync(null, false);
+    }
+  }
+
+  if (lifelongState.autoSave && simTime >= nextAutoSave) {
+    nextAutoSave += AUTOSAVE_INTERVAL;
+    saveLifelongBrain(true);
+  }
+
+  cities.forEach(city => {
+    const s = scen(city);
+    const suppressSynthetic = traceState.active
+      && traceState.replayMode === "DETERMINISTIC"
+      && traceState.tracedCities.has(city.id);
+
+    if (!suppressSynthetic) {
+      if (Math.random() < 1.1 * city.traffic * s.trafficMult * wave * dt) {
+        trySpawnVehicle(city, LANES[Math.floor(Math.random() * LANES.length)], false);
+      }
+      if (Math.random() < 0.6 * city.pedestrian * s.pedMult * wave * dt && city.peds.length < 18) {
+        spawnPed(city);
+      }
+      if (s.accidents && simTime >= city.nextAccidentAt) {
+        triggerHazard(city);
+        city.nextAccidentAt = simTime + 14;
+      }
+    }
+
+    updatePeds(city, dt);
+    signalTick(city);
+    updateVehicles(city, dt);
+
+    if (simTime >= city.nextAgentAt) {
+      city.nextAgentAt += 1.0;
+      agentCycle(city);
+    }
+  });
+
+  if (simTime >= nextUI) {
+    nextUI = simTime + 0.2;
+    updateUI();
+  }
+
+  cities.forEach(drawCity);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
